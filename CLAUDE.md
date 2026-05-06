@@ -81,3 +81,30 @@ kurio-mkt/
 - All campaign creation defaults to `status: PAUSED`
 - Reports/analyze need only `ads_read`; create needs `ads_management`
 - Token in `.env`, never logged or committed
+
+---
+
+## Operating rules for future sessions
+
+Running decisions and guardrails carried forward from prior work. Read [FINDINGS.md](FINDINGS.md) for the data behind each one.
+
+**Scope:**
+- Token has `ads_read` only. `ads_management` was declined deliberately. Don't build or run `src/campaigns/create.js` until the user explicitly authorizes write access.
+- Active accounts to focus on: **Kurio 2** (`act_1071893357737329`) and **Kurio 3** (`act_930175825635997`). Kurio 5 has 3 live campaigns but minor volume. Treat **Huy Quang Mai** (`act_10201301849281099`) as a personal account — out of scope.
+
+**KPI rules:**
+- Primary KPI is **`complete_registration` (CPR)**, NOT Meta-form `lead`. Most Kurio campaigns have objective `OUTCOME_SALES`, not `OUTCOME_LEADS`.
+- Meta double-reports the same lead under several `action_type` aliases (`lead`, `onsite_conversion.lead_grouped`, `onsite_conversion.lead`, `onsite_web_lead`, `offsite_search_add_meta_leads` — all equal in our data). Canonical sum is `onsite_conversion.lead_grouped + offsite_conversion.fb_pixel_lead`. Never sum `lead` on top of `lead_grouped` — it's 2× double-counting.
+- `MESS_*` (Messenger) and `ENGAGE_*` (engagement/awareness) campaigns must NOT be judged by CPR — they optimize for `MESSAGE_PAGE` clicks or reach, not registrations. Use cost-per-conversation or CPM/reach instead, or pause if those channels aren't valued.
+
+**API gotchas:**
+- Kurio 2 frequently hits Meta rate-limit error #4. `src/client.js` already has exponential-backoff retry for codes 4/17/32/613 + subcode 2446079. Don't re-implement.
+- The ad account ID in `.env` is the actual account ID (16-digit from Ads Manager → Ad account settings) — NOT the App ID. The client auto-prepends `act_` if missing.
+- Ad creatives are mostly boosted Page posts (`object_story_id`). Fetching the underlying post needs `pages_read_engagement`, which the token doesn't have. Fall back to `creative.name` for ad copy — it carries the post body with a date-hash suffix that `src/analyze/creatives.js` strips.
+
+**Resolved vs open:**
+- ✅ Winning creative formula identified (see FINDINGS.md "What Works")
+- ✅ Targeting insight: broad beats interest-stacking on `OFFSITE_CONVERSIONS` (n=5, suggestive)
+- ❓ Open: validate broad-targeting hypothesis at larger scale (top 30 + bottom 30 by CPR)
+- ❓ Open: is brand awareness an actual KPI? Decides fate of `Engage - vtv` (lowercase)
+- ❓ Open: confirm with stakeholders that `complete_registration` is the right success metric

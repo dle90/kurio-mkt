@@ -1,0 +1,19 @@
+{
+  "name": "kurio-mkt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Direct Meta Marketing API automation for Kurio lead-gen campaigns",
+  "scripts": {
+    "verify": "node src/verify.js",
+    "report": "node src/reports/performance.js",
+    "analyze": "node src/analyze/creatives.js",
+    "create": "node src/campaigns/create.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -8,6 +8,12 @@
     "verify": "node src/verify.js",
     "report": "node src/reports/performance.js",
     "analyze": "node src/analyze/creatives.js",
+    "analyze:targeting": "node src/analyze/targeting-scale.js",
+    "analyze:seasonal": "node src/analyze/seasonal.js",
+    "analyze:decay": "node src/analyze/creative-decay.js",
+    "analyze:age": "node src/analyze/adset-age.js",
+    "analyze:samecreative": "node src/analyze/same-creative-monthly.js",
+    "analyze:week-apr29": "node src/analyze/week-apr29.js",
     "create": "node src/campaigns/create.js"
   },
   "dependencies": {

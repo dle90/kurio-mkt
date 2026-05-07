@@ -104,7 +104,14 @@ Running decisions and guardrails carried forward from prior work. Read [FINDINGS
 
 **Resolved vs open:**
 - ✅ Winning creative formula identified (see FINDINGS.md "What Works")
-- ✅ Targeting insight: broad beats interest-stacking on `OFFSITE_CONVERSIONS` (n=5, suggestive)
-- ❓ Open: validate broad-targeting hypothesis at larger scale (top 30 + bottom 30 by CPR)
+- ❌ **Original "broad targeting beats interest-stacking by 11×" finding is RETRACTED.** When the same-creative comparison is re-run controlling for ad-life month (J, 2026-05-07), first-month CPR spread is only 1.79× (not 11×). The "11×" was an artifact of `last_90d` capturing the bottom adset's degraded m2/m3 vs the top adsets' efficient m1. Targeting is at most a marginal lever (47% TOP vs 63% BOTTOM at scale, p≈0.21).
+- 📐 **Methodological rule (new):** never compare CPR across ad sets using `date_preset` when the ad sets have different ages. Always use `time_increment=30` since each adset's `created_time` for like-for-like life-stage comparisons.
+- ✅ At-scale analysis surfaced a bigger lever: **0/60 ad sets use positive custom audiences** (e.g. Lookalike-of-`complete_registration`). Largest unexplored variable.
+- ✅ Time-dimension finding (most important so far): **creative-level fatigue is the dominant CPR driver.** Top ads' median CPR ~doubles by month 3 of their lifetime. Ad-set age (the wrapper) has near-zero correlation with CPR (Pearson r=0.071); the fatigue lives at the ad creative level.
+- ✅ Seasonal CPR is essentially flat Oct 2025 → May 2026 (~344k → 350k → 368k VND across PRE/IKMC/POST phases). The IKMC organic window does NOT lower CPR — it shifts the funnel mix (cheaper LPVs at worse conversion). Don't budget for an "IKMC efficiency window."
+- ⚠️ During IKMC weeks (esp Jan 21 + Jan 28), LPV volume spiked to 8.4k/week at 2.5% conversion vs the ~6% baseline. Plausibly IKMC contest-curious traffic that doesn't convert to paid registrations — worth tracking IKMC-specific landing pages with a different success metric.
 - ❓ Open: is brand awareness an actual KPI? Decides fate of `Engage - vtv` (lowercase)
 - ❓ Open: confirm with stakeholders that `complete_registration` is the right success metric
+- ✅ Apr 29 week investigation: spend dropped 23% (76.9M → 59.2M VND), reg held steady, CPR fell 24% (316k → 239k). Driven by pruning ~25 marginal campaigns + broad same-campaign improvements (11/15 active campaigns improved). Concentration in `_xpage` / `_xpage_kv` LP-suffix winners. **Lesson: pruning underperformers is the most direct controllable CPR lever.**
+- 🚨 The `Engage - vtv` (capital + lowercase) pause recommendation from the original audit is **still unactioned 90 days later** — both campaigns spent 2.2M VND in the Apr 29 week with 0 reg. Resurface to user when relevant.
+- ❓ Open: what is the `_xpage_kv` landing page variant structurally? It dominates the Apr 29 winners — worth confirming with team and considering standardization.

@@ -7,3 +7,4 @@ node_modules/
 
 # Local API snapshots from analysis scripts — regenerate with npm run analyze:*
 *-results.json
+creatives-categorized.json

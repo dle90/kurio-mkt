@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ladipage": {
+      "type": "http",
+      "url": "https://api.ladipage.net/2.0/mcp-server/YOUR_LADIPAGE_API_KEY"
+    }
+  }
+}

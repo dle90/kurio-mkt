@@ -8,3 +8,10 @@ node_modules/
 # Local API snapshots from analysis scripts — regenerate with npm run analyze:*
 *-results.json
 creatives-categorized.json
+
+# ROAS pipeline cache + outputs (contain PII + business revenue — never commit)
+.cache/
+out/
+
+# Ladipage MCP server config (contains a tenant-scoped token). Copy from .mcp.json.example.
+.mcp.json

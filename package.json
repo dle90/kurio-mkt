@@ -14,7 +14,14 @@
     "analyze:age": "node src/analyze/adset-age.js",
     "analyze:samecreative": "node src/analyze/same-creative-monthly.js",
     "analyze:week-apr29": "node src/analyze/week-apr29.js",
-    "create": "node src/campaigns/create.js"
+    "create": "node src/campaigns/create.js",
+    "inspect:getfly": "node src/getfly/inspect.js",
+    "roas:fetch:meta": "node src/roas/fetch_meta_spend.js",
+    "roas:fetch:getfly": "node src/roas/fetch_getfly.js",
+    "roas:fetch:sheet": "node src/roas/fetch_sheet.js",
+    "roas:parse:sheet": "node src/roas/parse_sheet.js",
+    "roas:compute": "node src/roas/compute.js",
+    "roas:build": "node src/roas/fetch_sheet.js && node src/roas/fetch_meta_spend.js && node src/roas/fetch_getfly.js && node src/roas/parse_sheet.js && node src/roas/compute.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5"

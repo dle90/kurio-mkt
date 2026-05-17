@@ -21,7 +21,10 @@
     "roas:fetch:sheet": "node src/roas/fetch_sheet.js",
     "roas:parse:sheet": "node src/roas/parse_sheet.js",
     "roas:compute": "node src/roas/compute.js",
-    "roas:build": "node src/roas/fetch_sheet.js && node src/roas/fetch_meta_spend.js && node src/roas/fetch_getfly.js && node src/roas/parse_sheet.js && node src/roas/compute.js"
+    "roas:build": "node src/roas/fetch_sheet.js && node src/roas/fetch_meta_spend.js && node src/roas/fetch_getfly.js && node src/roas/parse_sheet.js && node src/roas/compute.js",
+    "roas:fetch:creative": "node src/roas/fetch_creative_and_recent.js",
+    "roas:actionable": "node src/roas/actionable.js",
+    "roas:analyze:kv": "node src/roas/analyze_kv.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5"

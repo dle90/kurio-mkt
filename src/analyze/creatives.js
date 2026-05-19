@@ -1,10 +1,7 @@
 import { meta } from '../client.js';
 
 const DATE_PRESET = process.env.DATE_PRESET || 'last_90d';
-const TARGETS = [
-  { id: 'act_1071893357737329', name: 'Kurio 2' },
-  { id: 'act_930175825635997', name: 'Kurio 3' },
-];
+const TARGETS = meta.targets;
 const MIN_SPEND = 500_000;
 const TOP_N = 15;
 

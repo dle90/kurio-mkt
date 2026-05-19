@@ -5,6 +5,9 @@ node_modules/
 *.log
 .DS_Store
 
+# Per-machine Claude Code settings (project-local user config)
+.claude/
+
 # Local API snapshots from analysis scripts — regenerate with npm run analyze:*
 *-results.json
 creatives-categorized.json
@@ -12,6 +15,14 @@ creatives-categorized.json
 # ROAS pipeline cache + outputs (contain PII + business revenue — never commit)
 .cache/
 out/
+
+# SQLite ROAS database — contains lead phone numbers + revenue per phone (PII)
+kurio.db
+kurio.db-shm
+kurio.db-wal
+
+# Buyer's manually-shared spreadsheet (may contain customer data)
+Data Kurio.xlsx
 
 # Ladipage MCP server config (contains a tenant-scoped token). Copy from .mcp.json.example.
 .mcp.json

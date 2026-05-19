@@ -8,9 +8,27 @@ if (!TOKEN) {
   throw new Error('Missing META_ACCESS_TOKEN in .env');
 }
 
-const ACCOUNT = RAW_ACCOUNT
-  ? (RAW_ACCOUNT.startsWith('act_') ? RAW_ACCOUNT : `act_${RAW_ACCOUNT}`)
-  : null;
+const normalizeAccount = id => (id && !id.startsWith('act_') ? `act_${id}` : id);
+
+const ACCOUNT = RAW_ACCOUNT ? normalizeAccount(RAW_ACCOUNT) : null;
+
+// Known account ID -> friendly name. Falls back to the bare ID if unmapped.
+const ACCOUNT_NAMES = {
+  act_1071893357737329: 'Kurio 2',
+  act_930175825635997: 'Kurio 3',
+  act_1069029708221793: 'Kurio 5',
+  act_630326812905786: 'Kurio 4',
+  act_858741683071872: 'Kurio',
+  act_1055641230037368: 'Kurio Math',
+};
+
+// Focus accounts from META_AD_ACCOUNT_IDS (comma-separated), falling back to META_AD_ACCOUNT_ID.
+const TARGETS = (process.env.META_AD_ACCOUNT_IDS || RAW_ACCOUNT || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
+  .map(normalizeAccount)
+  .map(id => ({ id, name: ACCOUNT_NAMES[id] || id }));
 
 const BASE = `https://graph.facebook.com/${VERSION}`;
 
@@ -32,7 +50,10 @@ async function request(method, path, { params = {}, body, retry = 0 } = {}) {
     const code = json.error?.code;
     const subcode = json.error?.error_subcode;
     const msg = json.error?.message || res.statusText;
-    const isRateLimit = code === 4 || code === 17 || code === 32 || code === 613 || subcode === 2446079;
+    // 4/17/32/613 = rate limits; 1/2 = Meta's transient "unknown error" /
+    // "service temporarily unavailable" (common on heavy insights queries).
+    const isRateLimit = code === 1 || code === 2 || code === 4 || code === 17 ||
+      code === 32 || code === 613 || subcode === 2446079;
     if (isRateLimit && retry < 4) {
       const wait = (2 ** retry) * 30_000;
       console.log(`  [rate-limited, sleeping ${wait / 1000}s before retry ${retry + 1}/4]`);
@@ -50,7 +71,10 @@ async function fetchWithRetry(url, retry = 0) {
   if (!res.ok || json.error) {
     const code = json.error?.code;
     const subcode = json.error?.error_subcode;
-    const isRateLimit = code === 4 || code === 17 || code === 32 || code === 613 || subcode === 2446079;
+    // 4/17/32/613 = rate limits; 1/2 = Meta's transient "unknown error" /
+    // "service temporarily unavailable" (common on heavy insights queries).
+    const isRateLimit = code === 1 || code === 2 || code === 4 || code === 17 ||
+      code === 32 || code === 613 || subcode === 2446079;
     if (isRateLimit && retry < 4) {
       const wait = (2 ** retry) * 30_000;
       console.log(`  [paging rate-limited, sleeping ${wait / 1000}s before retry ${retry + 1}/4]`);
@@ -82,6 +106,7 @@ async function paginate(path, params = {}) {
 
 export const meta = {
   account: ACCOUNT,
+  targets: TARGETS,
   version: VERSION,
   get: (path, params) => request('GET', path, { params }),
   post: (path, body, params) => request('POST', path, { body, params }),

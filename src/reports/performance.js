@@ -2,10 +2,7 @@ import { meta } from '../client.js';
 
 const DATE_PRESET = process.env.DATE_PRESET || 'last_30d';
 
-const TARGETS = [
-  { id: 'act_1071893357737329', name: 'Kurio 2' },
-  { id: 'act_930175825635997', name: 'Kurio 3' },
-];
+const TARGETS = meta.targets;
 
 function actionValue(actions, type) {
   const a = (actions || []).find(x => x.action_type === type);

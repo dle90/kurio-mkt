@@ -1,8 +1,12 @@
 // Full rewrite of data/roas-codes-ranked.csv using ORDER-BASED revenue
-// (sum of approved sale_orders.real_amount, attributed via phone → sheet
-// first-touch → code). Replaces the previous account.created_at cohort
-// method which systematically undercounted older codes' revenue by missing
-// repeat purchases from existing customers.
+// (sum of approved sale_orders.real_amount, attributed via phone → code).
+//
+// ATTRIBUTION SOURCE (env ATTRIB, default 'getfly'):
+//   getfly — phone → Getfly account custom_fields.ads_code (first-party,
+//            first-touch). Requires .cache/getfly_accounts.json. CANONICAL.
+//   sheet  — phone → Google-sheet first-touch code (legacy/retired).
+//   hybrid — Getfly first, sheet fills gaps. Verified to add only ~0.3%
+//            revenue over pure getfly — the sheet is redundant; kept for audit.
 //
 // Spend numbers come from the same Meta monthly cache as before — only the
 // revenue columns and ROAS columns change.
@@ -16,19 +20,24 @@
 //   ,5/11-5/17 ... (same)
 import fs from 'node:fs';
 
+const ATTRIB = (process.env.ATTRIB || 'getfly').toLowerCase(); // 'getfly' | 'sheet' | 'hybrid'
+const useGetfly = ATTRIB === 'getfly' || ATTRIB === 'hybrid';
+const useSheet  = ATTRIB === 'sheet'  || ATTRIB === 'hybrid';
 const META = JSON.parse(fs.readFileSync('.cache/meta_spend_monthly.json','utf8'));
 const RECENT = JSON.parse(fs.readFileSync('.cache/meta_spend_recent.json','utf8'));
-const SHEET = JSON.parse(fs.readFileSync('.cache/sheet_leads.json','utf8'));
 const ORDERS_YTD = JSON.parse(fs.readFileSync('.cache/getfly_orders_ytd.json','utf8'));
 const ORDERS_RECENT = JSON.parse(fs.readFileSync('.cache/getfly_orders_recent.json','utf8'));
+const SHEET = useSheet ? JSON.parse(fs.readFileSync('.cache/sheet_leads.json','utf8')) : [];
+const ACCOUNTS = useGetfly ? JSON.parse(fs.readFileSync('.cache/getfly_accounts.json','utf8')) : [];
 
 const FILE_OUT = 'data/roas-codes-ranked.csv';
 
 function normPhone(s){if(!s)return '';const d=String(s).replace(/[^\d]/g,'');if(d.startsWith('84')&&d.length===11)return '0'+d.slice(2);if(d.startsWith('84')&&d.length===12)return '0'+d.slice(2);if(d.length===9)return '0'+d;if(d.length===10&&d.startsWith('0'))return d;if(d.length===10)return '0'+d.slice(1);return d;}
-function lpKey(url){if(!url)return null;try{const u=new URL(url);return u.hostname+u.pathname.replace(/\/$/,'')||u.hostname;}catch{return null;}}
 
-const sheetCodes = new Set();
-for (const l of SHEET) if (l.code) sheetCodes.add(l.code);
+// Code set used by resolveAd to map Meta campaign names -> codes.
+const codeSet = new Set();
+if (useGetfly) for (const a of ACCOUNTS) if (a.ads_code) codeSet.add(a.ads_code.trim().toLowerCase());
+if (useSheet)  for (const l of SHEET) if (l.code) codeSet.add(l.code);
 
 function variants(s) {
   if (!s) return new Set();
@@ -41,9 +50,9 @@ function variants(s) {
   if (m) { vs.add(m[1] + m[2]); vs.add(m[1] + '-' + m[2]); vs.add('code' + m[2]); }
   return vs;
 }
-function findMatch(s) { if (!s) return null; for (const v of variants(s)) if (sheetCodes.has(v)) return v; return null; }
+function findMatch(s) { if (!s) return null; for (const v of variants(s)) if (codeSet.has(v)) return v; return null; }
 function resolveAd(r) {
-  if (sheetCodes.has(r.ad_name_norm)) return r.ad_name_norm;
+  if (codeSet.has(r.ad_name_norm)) return r.ad_name_norm;
   let m = findMatch(r.ad_name_norm); if (m) return m;
   m = findMatch(r.adset_name); if (m) return m;
   for (const t of String(r.adset_name||'').split(/[+_,\s\\\/]/).map(x=>x.trim()).filter(Boolean)) { const mm = findMatch(t); if (mm) return mm; }
@@ -79,14 +88,24 @@ for (const r of META) {
   if (regs > 0) regsByCM.set(code + '|' + r.month, (regsByCM.get(code + '|' + r.month)||0) + (+regs || 0));
 }
 
-// ---- Order-based revenue per (code, month) ----
-SHEET.sort((a,b)=>a.date.localeCompare(b.date));
-const phoneAttrib = new Map();
-for (const l of SHEET) {
-  if (!l.phone) continue;
-  const lp = lpKey(l.lp_url);
-  if (!phoneAttrib.has(l.phone)) phoneAttrib.set(l.phone, {code: l.code || null, lp});
-  else { const cur = phoneAttrib.get(l.phone); if (!cur.code && l.code) cur.code = l.code; if (!cur.lp && lp) cur.lp = lp; }
+// ---- phone -> code attribution (first-touch) ----
+// Getfly fills first; in hybrid mode the sheet then fills only phones Getfly
+// didn't capture (older registrations from before ads_code existed).
+const phoneToCode = new Map();
+let nGetfly = 0, nSheet = 0;
+if (useGetfly) {
+  const sorted = [...ACCOUNTS].sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
+  for (const a of sorted) {
+    if (!a.phone || !a.ads_code) continue;
+    if (!phoneToCode.has(a.phone)) { phoneToCode.set(a.phone, a.ads_code.trim().toLowerCase()); nGetfly++; }
+  }
+}
+if (useSheet) {
+  SHEET.sort((a,b)=>a.date.localeCompare(b.date));
+  for (const l of SHEET) {
+    if (!l.phone || !l.code) continue;
+    if (!phoneToCode.has(l.phone)) { phoneToCode.set(l.phone, l.code); nSheet++; }
+  }
 }
 
 const revByCM = new Map(); // code|month -> revenue
@@ -99,13 +118,12 @@ for (const o of ORDERS_YTD) {
   const month = (o.created_at||'').slice(0,7);
   if (!month) continue;
   totRevByMonth.set(month, (totRevByMonth.get(month)||0) + amt);
-  const phone = normPhone(o.account_phone);
-  const attr = phoneAttrib.get(phone);
-  if (!attr || !attr.code) {
+  const code = phoneToCode.get(normPhone(o.account_phone));
+  if (!code) {
     unattribRevByMonth.set(month, (unattribRevByMonth.get(month)||0) + amt);
     continue;
   }
-  const k = attr.code + '|' + month;
+  const k = code + '|' + month;
   revByCM.set(k, (revByCM.get(k)||0) + amt);
 }
 
@@ -137,11 +155,10 @@ for (const o of ORDERS_RECENT) {
   const amt = +o.real_amount || 0;
   if (amt <= 0) continue;
   const d = (o.created_at||'').slice(0,10);
-  const phone = normPhone(o.account_phone);
-  const attr = phoneAttrib.get(phone);
-  if (!attr || !attr.code) continue;
-  if (inLast(d)) revL.set(attr.code, (revL.get(attr.code)||0) + amt);
-  else if (inPrior(d)) revP.set(attr.code, (revP.get(attr.code)||0) + amt);
+  const code = phoneToCode.get(normPhone(o.account_phone));
+  if (!code) continue;
+  if (inLast(d)) revL.set(code, (revL.get(code)||0) + amt);
+  else if (inPrior(d)) revP.set(code, (revP.get(code)||0) + amt);
 }
 
 // ---- Assemble rows ----
@@ -228,20 +245,13 @@ for (const r of rows) {
 
 fs.writeFileSync(FILE_OUT, '﻿' + lines.join('\r\n') + '\r\n');
 
-// ---- Console: before/after totals ----
-const oldRev = { ytd: 1055200000, apr: 289350000, may: 153500000 };  // from earlier compute
+// ---- Console: totals ----
 const newYtd = rows.reduce((a,r)=>a+r.ytdR, 0);
-const newApr = rows.reduce((a,r)=>a+r.monthly['2026-04'].r, 0);
-const newMay = rows.reduce((a,r)=>a+r.monthly['2026-05'].r, 0);
 const totSpendYtd = rows.reduce((a,r)=>a+r.ytdS, 0);
 
-console.log(`Wrote ${FILE_OUT}: ${rows.length} code rows\n`);
-console.log('=== Code-attributed revenue: before (account-cohort) vs after (order-based) ===');
-console.log(`              before          after          change`);
-console.log(`YTD rev:    ${oldRev.ytd.toLocaleString().padStart(13)}  ${Math.round(newYtd).toLocaleString().padStart(13)}  ${((newYtd-oldRev.ytd)/oldRev.ytd*100).toFixed(0)}%`);
-console.log(`Apr rev:    ${oldRev.apr.toLocaleString().padStart(13)}  ${Math.round(newApr).toLocaleString().padStart(13)}  ${((newApr-oldRev.apr)/oldRev.apr*100).toFixed(0)}%`);
-console.log(`May rev:    ${oldRev.may.toLocaleString().padStart(13)}  ${Math.round(newMay).toLocaleString().padStart(13)}  ${((newMay-oldRev.may)/oldRev.may*100).toFixed(0)}%`);
-console.log(`\nYTD spend:  ${Math.round(totSpendYtd).toLocaleString()}  →  blended ROAS: ${(newYtd/totSpendYtd).toFixed(2)} (was ${(oldRev.ytd/totSpendYtd).toFixed(2)})`);
+console.log(`Wrote ${FILE_OUT}: ${rows.length} code rows`);
+console.log(`Attribution: ${ATTRIB.toUpperCase()}  |  code set ${codeSet.size} codes  |  phone→code map ${phoneToCode.size} phones (${nGetfly} Getfly + ${nSheet} sheet)`);
+console.log(`YTD: code-attributed rev ${Math.round(newYtd).toLocaleString()}  spend ${Math.round(totSpendYtd).toLocaleString()}  blended ROAS ${(newYtd/totSpendYtd).toFixed(2)}`);
 
 console.log('\nMonthly totals (order-based):');
 for (const m of months) {

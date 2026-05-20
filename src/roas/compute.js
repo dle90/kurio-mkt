@@ -1,266 +1,133 @@
-// Join sheet leads × Meta spend × Getfly revenue.
-// Output: code-level ROAS + LP-level ROAS (for paying customers without code).
-// Attribution model: FIRST-TOUCH per phone, code preferred, LP-host+path as fallback.
+// Code-level ROAS pipeline → out/roas_report.html + out/roas_by_code.csv
+//
+// Order-based revenue (approved sale_orders.real_amount) with Getfly ads_code
+// attribution. Spend + registrations from Meta monthly insights. Consistent
+// with recompute_codes_ranked.js (ATTRIB=getfly).
 import fs from 'node:fs';
 import { renderHtml } from './render_html.js';
+import { loadAttribution, normPhone, isXpage } from './attribution.js';
 
-const META = JSON.parse(fs.readFileSync('.cache/meta_spend.json', 'utf-8'));
-const SHEET = JSON.parse(fs.readFileSync('.cache/sheet_leads.json', 'utf-8'));
-const GF = JSON.parse(fs.readFileSync('.cache/getfly.json', 'utf-8'));
+const META = JSON.parse(fs.readFileSync('.cache/meta_spend_monthly.json', 'utf8'));
+const ORDERS = JSON.parse(fs.readFileSync('.cache/getfly_orders_ytd.json', 'utf8'));
 
-function normPhone(s) {
-  if (!s) return '';
-  const d = String(s).replace(/[^\d]/g, '');
-  if (d.startsWith('84') && d.length === 11) return '0' + d.slice(2);
-  if (d.startsWith('84') && d.length === 12) return '0' + d.slice(2);
-  if (d.length === 9) return '0' + d;
-  if (d.length === 10 && d.startsWith('0')) return d;
-  if (d.length === 10) return '0' + d.slice(1);
-  return d;
-}
+const { resolveAd, phoneToCode } = loadAttribution();
 
-function lpKey(url) {
-  if (!url) return null;
-  try { const u = new URL(url); return u.hostname + u.pathname.replace(/\/$/, '') || u.hostname; } catch { return null; }
-}
-
-// 1. phone -> account with total_revenue
-const phoneToAccount = {};
-for (const a of GF.accounts) {
-  const p = normPhone(a.phone_office);
-  if (!p) continue;
-  if (!phoneToAccount[p] || (a.total_revenue || 0) > (phoneToAccount[p].total_revenue || 0)) {
-    phoneToAccount[p] = a;
-  }
-}
-
-// 2. Meta spend per ad-name-norm
+// ---- spend + registrations per code (YTD) ----
 const spendByCode = new Map();
 const impByCode = new Map();
-const linkClicksByCode = new Map();
+const clicksByCode = new Map();
+const regsByCode = new Map();
 for (const r of META) {
-  const k = r.ad_name_norm;
-  if (!k) continue;
-  spendByCode.set(k, (spendByCode.get(k) || 0) + r.spend);
-  impByCode.set(k, (impByCode.get(k) || 0) + r.impressions);
-  linkClicksByCode.set(k, (linkClicksByCode.get(k) || 0) + r.link_clicks);
+  const code = resolveAd(r);
+  if (!code) continue;
+  spendByCode.set(code, (spendByCode.get(code) || 0) + (+r.spend || 0));
+  impByCode.set(code, (impByCode.get(code) || 0) + (+r.impressions || 0));
+  clicksByCode.set(code, (clicksByCode.get(code) || 0) + (+r.clicks || 0));
+  regsByCode.set(code, (regsByCode.get(code) || 0) + (+r.registrations || 0));
 }
 
-// 3. Sheet — first-touch per phone, code preferred, LP as fallback
-SHEET.sort((a, b) => a.date.localeCompare(b.date));
-const phoneAttrib = new Map(); // phone -> { code | null, lp | null, first_date }
-for (const lead of SHEET) {
-  if (!lead.phone) continue;
-  const lp = lpKey(lead.lp_url);
-  if (!phoneAttrib.has(lead.phone)) {
-    // First sheet row for this phone — code if present, else lp
-    phoneAttrib.set(lead.phone, { code: lead.code || null, lp, first_date: lead.date });
-  } else {
-    // Already have a touch — but if the existing attribution has no code and this one does, upgrade
-    const cur = phoneAttrib.get(lead.phone);
-    if (!cur.code && lead.code) { cur.code = lead.code; }
-    if (!cur.lp && lp) cur.lp = lp;
-  }
+// ---- order-based revenue + paying phones per code (YTD) ----
+const revByCode = new Map();
+const paidPhonesByCode = new Map();   // code -> Set(phone)
+let totalRevenue = 0, codeAttribRevenue = 0;
+const payingPhones = new Set();
+for (const o of ORDERS) {
+  if (o.status !== 2) continue;
+  const amt = +o.real_amount || 0;
+  if (amt <= 0) continue;
+  const phone = normPhone(o.account_phone);
+  totalRevenue += amt;
+  if (phone) payingPhones.add(phone);
+  const code = phoneToCode.get(phone);
+  if (!code) continue;
+  revByCode.set(code, (revByCode.get(code) || 0) + amt);
+  codeAttribRevenue += amt;
+  if (!paidPhonesByCode.has(code)) paidPhonesByCode.set(code, new Set());
+  paidPhonesByCode.get(code).add(phone);
 }
 
-// 4. Build per-code AND per-LP aggregates
-const leadsByCode = new Map();
-const phonesByCode = new Map();
-const leadsByLp = new Map();
-const phonesByLp = new Map();
-// Lead counts (every row counted by code/LP, not unique-by-phone)
-for (const lead of SHEET) {
-  if (lead.code) leadsByCode.set(lead.code, (leadsByCode.get(lead.code) || 0) + 1);
-  const lp = lpKey(lead.lp_url);
-  if (lp) leadsByLp.set(lp, (leadsByLp.get(lp) || 0) + 1);
-}
-// Unique phones per code/LP using first-touch attribution
-for (const [phone, attr] of phoneAttrib.entries()) {
-  if (attr.code) {
-    if (!phonesByCode.has(attr.code)) phonesByCode.set(attr.code, new Set());
-    phonesByCode.get(attr.code).add(phone);
-  } else if (attr.lp) {
-    if (!phonesByLp.has(attr.lp)) phonesByLp.set(attr.lp, new Set());
-    phonesByLp.get(attr.lp).add(phone);
-  }
-}
-
-// 5. CODE-level rows
-function buildRow(key, opts) {
-  const spend = opts.spend || 0;
-  const leads = opts.leads || 0;
-  const uniq = opts.phones?.size || 0;
-  let paid = 0, revenue = 0;
-  for (const p of (opts.phones || [])) {
-    const acct = phoneToAccount[p];
-    if (acct && (acct.total_revenue || 0) > 0) { paid++; revenue += +acct.total_revenue; }
-  }
-  return {
-    key,
-    spend, impressions: opts.impressions || 0, linkClicks: opts.linkClicks || 0,
-    leads, uniquePhones: uniq, paidPhones: paid, revenue,
-    cpl: leads > 0 ? spend / leads : null,
-    cps: paid > 0 ? spend / paid : null,
-    convRate: uniq > 0 ? paid / uniq : 0,
-    roas: spend > 0 ? revenue / spend : null,
-  };
-}
-
+// ---- build code rows ----
+const allCodes = new Set([...spendByCode.keys(), ...revByCode.keys()]);
 const codeRows = [];
-const allCodes = new Set([...spendByCode.keys(), ...leadsByCode.keys()]);
 for (const code of allCodes) {
+  const spend = spendByCode.get(code) || 0;
+  const revenue = revByCode.get(code) || 0;
+  const registrations = Math.round(regsByCode.get(code) || 0);
+  const paidPhones = paidPhonesByCode.get(code)?.size || 0;
   codeRows.push({
-    type: 'code',
-    inMeta: spendByCode.has(code),
-    inSheet: leadsByCode.has(code),
-    ...buildRow(code, {
-      spend: spendByCode.get(code), impressions: impByCode.get(code), linkClicks: linkClicksByCode.get(code),
-      leads: leadsByCode.get(code), phones: phonesByCode.get(code),
-    }),
+    key: code, isXpage: isXpage(code),
+    spend, impressions: impByCode.get(code) || 0, clicks: clicksByCode.get(code) || 0,
+    registrations, paidPhones, revenue,
+    cpr: registrations > 0 ? spend / registrations : null,
+    cps: paidPhones > 0 ? spend / paidPhones : null,
+    convRate: registrations > 0 ? paidPhones / registrations : 0,
+    roas: spend > 0 ? revenue / spend : null,
   });
 }
 codeRows.sort((a, b) => b.spend - a.spend);
 
-// 6. LP-level rows (only for phones without a code)
-const lpRows = [];
-for (const [lp] of leadsByLp) {
-  lpRows.push({
-    type: 'lp',
-    ...buildRow(lp, {
-      // No Meta spend per LP available without further work
-      leads: leadsByLp.get(lp),
-      phones: phonesByLp.get(lp),
-    }),
-  });
-}
-lpRows.sort((a, b) => b.revenue - a.revenue);
-
-// 7. Totals
 const totSpend = codeRows.reduce((s, r) => s + r.spend, 0);
-const totCodeRevenue = codeRows.reduce((s, r) => s + r.revenue, 0);
-const totLpRevenue = lpRows.reduce((s, r) => s + r.revenue, 0);
-const totCodePaid = codeRows.reduce((s, r) => s + r.paidPhones, 0);
-const totLpPaid = lpRows.reduce((s, r) => s + r.paidPhones, 0);
-const totAttribRevenue = totCodeRevenue + totLpRevenue;
+const totReg = codeRows.reduce((s, r) => s + r.registrations, 0);
 
-// Universe totals from Getfly
-const allPaidAccounts = GF.accounts.filter(a => (a.total_revenue || 0) > 0);
-const universePaying = allPaidAccounts.length;
-const universeRevenue = allPaidAccounts.reduce((s, a) => s + (+a.total_revenue || 0), 0);
+// ---- console summary ----
+const L = '='.repeat(80);
+console.log(L);
+console.log('ROAS PIPELINE — 2026 YTD  (order-based revenue, Getfly ads_code attribution)');
+console.log(L);
+console.log(`  Meta spend (code-matched):      ${Math.round(totSpend).toLocaleString()} VND`);
+console.log(`  Total approved revenue (Getfly):${Math.round(totalRevenue).toLocaleString()} VND`);
+console.log(`  Ad-code-attributed revenue:     ${Math.round(codeAttribRevenue).toLocaleString()} VND  (${(codeAttribRevenue / totalRevenue * 100).toFixed(0)}% of total)`);
+console.log(`  Blended ROAS (ad-attrib/spend): ${(codeAttribRevenue / totSpend).toFixed(2)}`);
+console.log(`  Registrations:                  ${totReg.toLocaleString()}`);
+console.log(`  Blended CPR:                    ${Math.round(totSpend / totReg).toLocaleString()} VND`);
+console.log(`  Paying customers (universe):    ${payingPhones.size.toLocaleString()}`);
 
-console.log('='.repeat(80));
-console.log('PIPELINE TOTALS (2026 YTD)');
-console.log('='.repeat(80));
-console.log(`  Total spend (Meta):                ${(totSpend|0).toLocaleString()} VND`);
-console.log(`  Total revenue (Getfly universe):   ${Math.round(universeRevenue).toLocaleString()} VND`);
-console.log(`  Total paying customers:            ${universePaying.toLocaleString()}`);
-console.log(`  BLENDED ROAS (universe):           ${(universeRevenue / totSpend).toFixed(2)}`);
-console.log('');
-console.log(`  Code-attributed revenue:           ${(totCodeRevenue|0).toLocaleString()} VND  (${totCodePaid} paid)`);
-console.log(`  LP-attributed revenue (fallback):  ${(totLpRevenue|0).toLocaleString()} VND  (${totLpPaid} paid)`);
-console.log(`  Total attributed:                  ${(totAttribRevenue|0).toLocaleString()} VND  (${(totAttribRevenue/universeRevenue*100).toFixed(1)}% of revenue)`);
-console.log(`  Unattributable (not in sheet):     ${(universeRevenue-totAttribRevenue|0).toLocaleString()} VND  (${((universeRevenue-totAttribRevenue)/universeRevenue*100).toFixed(1)}%)`);
-
-// CODE TABLE
-console.log('\n' + '='.repeat(100));
-console.log('TOP 30 CODES BY SPEND');
-console.log('='.repeat(100));
-console.log('code'.padEnd(22) + '| spend       | leads| paid | revenue     | CPL    | CPS     | ROAS');
-console.log('-'.repeat(100));
-codeRows.slice(0, 30).forEach(r => {
+console.log('\nTop 30 codes by spend:');
+console.log('code'.padEnd(22) + '| spend       | reg  | paid | revenue     | CPR    | ROAS');
+console.log('-'.repeat(80));
+for (const r of codeRows.slice(0, 30)) {
   console.log([
     r.key.slice(0, 21).padEnd(21),
-    (r.spend|0).toLocaleString().padStart(11),
-    String(r.leads).padStart(5),
+    Math.round(r.spend).toLocaleString().padStart(11),
+    String(r.registrations).padStart(5),
     String(r.paidPhones).padStart(5),
-    (r.revenue|0).toLocaleString().padStart(11),
-    (r.cpl != null ? (r.cpl|0).toLocaleString() : '—').padStart(7),
-    (r.cps != null ? (r.cps|0).toLocaleString() : '—').padStart(8),
+    Math.round(r.revenue).toLocaleString().padStart(11),
+    (r.cpr != null ? Math.round(r.cpr).toLocaleString() : '—').padStart(7),
     r.roas != null ? r.roas.toFixed(2) : '—',
   ].join(' | '));
-});
+}
 
-console.log('\nTop 15 by ROAS (min 1M spend, min 5 leads):');
-codeRows.filter(r => r.spend >= 1e6 && r.leads >= 5 && r.roas != null)
-  .sort((a, b) => b.roas - a.roas).slice(0, 15)
-  .forEach(r => console.log(
-    `  ${r.key.padEnd(22)} ROAS=${r.roas.toFixed(2)}  rev=${(r.revenue|0).toLocaleString().padStart(12)}  spend=${(r.spend|0).toLocaleString().padStart(11)}  paid=${r.paidPhones}/${r.uniquePhones}`
-  ));
-
-console.log('\nBottom 15 by ROAS (same filter):');
-codeRows.filter(r => r.spend >= 1e6 && r.leads >= 5 && r.roas != null)
-  .sort((a, b) => a.roas - b.roas).slice(0, 15)
-  .forEach(r => console.log(
-    `  ${r.key.padEnd(22)} ROAS=${r.roas.toFixed(2)}  rev=${(r.revenue|0).toLocaleString().padStart(12)}  spend=${(r.spend|0).toLocaleString().padStart(11)}  paid=${r.paidPhones}/${r.uniquePhones}`
-  ));
-
-// LP TABLE
-console.log('\n' + '='.repeat(80));
-console.log('LP-LEVEL FALLBACK (paying customers without a code, attributed by LP)');
-console.log('='.repeat(80));
-console.log('lp'.padEnd(45) + '| leads| paid | revenue       | conv%');
-console.log('-'.repeat(80));
-lpRows.slice(0, 20).forEach(r => {
-  if (r.revenue === 0) return;
-  console.log([
-    r.key.slice(0, 44).padEnd(44),
-    String(r.leads).padStart(5),
-    String(r.paidPhones).padStart(5),
-    (r.revenue|0).toLocaleString().padStart(13),
-    (r.convRate * 100).toFixed(1) + '%',
-  ].join(' | '));
-});
-
-// CSV outputs
-const writeCsv = (path, rows, header) => {
-  const lines = [header.join(',')];
-  for (const r of rows) {
-    lines.push(header.map(h => {
-      const v = r[h];
-      if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) return JSON.stringify(v);
-      if (typeof v === 'number') return Number.isFinite(v) ? v : '';
-      return v ?? '';
-    }).join(','));
-  }
-  fs.writeFileSync(path, lines.join('\n'));
+// ---- CSV ----
+const esc = v => {
+  if (v == null) return '';
+  if (typeof v === 'number') return Number.isFinite(v) ? v : '';
+  const s = String(v);
+  return s.includes(',') || s.includes('"') ? '"' + s.replace(/"/g, '""') + '"' : s;
 };
+const cols = ['code', 'is_xpage', 'spend_vnd', 'impressions', 'clicks', 'registrations',
+  'paid_phones', 'revenue_vnd', 'cpr_vnd', 'cps_vnd', 'conv_rate', 'roas'];
+const csvLines = [cols.join(',')];
+for (const r of codeRows) {
+  csvLines.push([
+    esc(r.key), r.isXpage ? 'TRUE' : 'FALSE', Math.round(r.spend), r.impressions, r.clicks,
+    r.registrations, r.paidPhones, Math.round(r.revenue),
+    r.cpr != null ? Math.round(r.cpr) : '', r.cps != null ? Math.round(r.cps) : '',
+    r.convRate.toFixed(4), r.roas != null ? r.roas.toFixed(3) : '',
+  ].join(','));
+}
+fs.writeFileSync('out/roas_by_code.csv', csvLines.join('\n'));
+console.log('\nWrote out/roas_by_code.csv');
 
-writeCsv('out/roas_by_code.csv',
-  codeRows.map(r => ({
-    code: r.key, spend_vnd: r.spend|0, impressions: r.impressions, link_clicks: r.linkClicks,
-    leads: r.leads, unique_phones: r.uniquePhones, paid_phones: r.paidPhones,
-    revenue_vnd: r.revenue|0,
-    cpl_vnd: r.cpl != null ? (r.cpl|0) : '',
-    cps_vnd: r.cps != null ? (r.cps|0) : '',
-    conv_rate: r.convRate.toFixed(4),
-    roas: r.roas != null ? r.roas.toFixed(3) : '',
-    in_meta: r.inMeta, in_sheet: r.inSheet,
-  })),
-  ['code','spend_vnd','impressions','link_clicks','leads','unique_phones','paid_phones','revenue_vnd','cpl_vnd','cps_vnd','conv_rate','roas','in_meta','in_sheet']
-);
-
-writeCsv('out/roas_by_lp.csv',
-  lpRows.map(r => ({
-    lp: r.key, leads: r.leads, unique_phones: r.uniquePhones, paid_phones: r.paidPhones,
-    revenue_vnd: r.revenue|0, conv_rate: r.convRate.toFixed(4),
-  })),
-  ['lp','leads','unique_phones','paid_phones','revenue_vnd','conv_rate']
-);
-
-console.log('\nWrote out/roas_by_code.csv and out/roas_by_lp.csv');
-
-// HTML report
-const totalLeads = SHEET.length;
+// ---- HTML ----
 const html = renderHtml({
   totals: {
     spend: totSpend,
-    universeRevenue,
-    payingCustomers: universePaying,
-    totalLeads,
-    codeAttrib: { paid: totCodePaid, revenue: totCodeRevenue },
-    lpAttrib:   { paid: totLpPaid, revenue: totLpRevenue },
+    totalRevenue,
+    codeAttribRevenue,
+    payingCustomers: payingPhones.size,
+    totalRegistrations: totReg,
   },
-  codeRows, lpRows,
+  codeRows,
   asOf: new Date().toISOString().slice(0, 10),
 });
 fs.writeFileSync('out/roas_report.html', html);

@@ -40,6 +40,7 @@ const main = async () => {
     console.log(`  ${rows.length} (ad, month) rows`);
     for (const r of rows) {
       const linkClicks = (r.actions || []).find(a => a.action_type === 'link_click')?.value || 0;
+      const regs = (r.actions || []).find(a => a.action_type === 'complete_registration')?.value || 0;
       allRows.push({
         account: acc.name,
         ad_id: r.ad_id,
@@ -54,6 +55,7 @@ const main = async () => {
         impressions: +r.impressions || 0,
         clicks: +r.clicks || 0,
         link_clicks: +linkClicks || 0,
+        registrations: +regs || 0,
       });
     }
   }

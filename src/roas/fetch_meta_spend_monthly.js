@@ -1,4 +1,4 @@
-// Pull Meta YTD spend per ad-name BROKEN OUT BY MONTH for Kurio 2 + Kurio 3.
+// Pull Meta YTD spend per ad-name BROKEN OUT BY MONTH for Kurio 2 + 3 + 5.
 // Same as fetch_meta_spend.js but with time_increment=monthly.
 // Output: .cache/meta_spend_monthly.json — one row per (ad, month).
 import 'dotenv/config';
@@ -8,6 +8,7 @@ import { meta } from '../client.js';
 const ACCOUNTS = [
   { id: 'act_1071893357737329', name: 'Kurio 2' },
   { id: 'act_930175825635997',  name: 'Kurio 3' },
+  { id: 'act_1069029708221793', name: 'Kurio 5' },
 ];
 const today = new Date().toISOString().slice(0, 10);
 const TIME_RANGE = { since: '2026-01-01', until: today };

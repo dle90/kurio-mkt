@@ -17,6 +17,14 @@ export function normPhone(s) {
 
 export const isXpage = code => /-?xpage|_xpage|-xp\b|-xp-|-kv$/i.test(code || '');
 
+// Hand-maintained aliases for Meta ad names whose embedded code does not match
+// the ads_code the landing page actually stamps on registrations. Keyed by the
+// normalized ad name. Kurio 5's LP abbreviates "xpage"→"xp" on this one code,
+// so resolution would otherwise land K5 spend on the base `code15_xpage`.
+const CODE_ALIASES = {
+  'code15_xpage-5': 'code15-xp-5',
+};
+
 function variants(s) {
   if (!s) return new Set();
   const lc = s.trim().toLowerCase();
@@ -52,6 +60,7 @@ export function loadAttribution() {
   };
   // r: { ad_name_norm, adset_name, campaign_name }
   const resolveAd = r => {
+    if (CODE_ALIASES[r.ad_name_norm]) return CODE_ALIASES[r.ad_name_norm];
     if (codeSet.has(r.ad_name_norm)) return r.ad_name_norm;
     let m = findMatch(r.ad_name_norm); if (m) return m;
     m = findMatch(r.adset_name); if (m) return m;

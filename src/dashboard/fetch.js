@@ -1,6 +1,8 @@
 // Fetch daily campaign-level Meta insights for the dashboard (default 60 days).
 // Pulls in small time-chunks — a single 60-day daily query is heavy enough that
 // Meta intermittently returns error 1/2 ("unknown" / "service unavailable").
+// A chunk that still fails is auto-retried split into SPLIT_DAYS-day pieces
+// (Kurio 2's recent busy weeks time out at 15 days but succeed at ~3).
 // Saves incrementally so partial progress survives a failure.
 // Output: .cache/dashboard_daily.json
 import 'dotenv/config';
@@ -34,6 +36,52 @@ function windows(sinceStr, untilStr, days) {
   return out;
 }
 
+const SPLIT_DAYS = +(process.env.SPLIT_DAYS || 3);
+const spanDays = w =>
+  Math.round((new Date(w.until) - new Date(w.since)) / 86400_000) + 1;
+
+// Fetch one (account, window) of daily campaign insights into `rows`.
+// On any Meta failure, re-fetch the window split into SPLIT_DAYS-day pieces
+// (recursively) instead of dropping it. Returns the count of sub-windows
+// that still failed at the minimum split size.
+async function fetchWindow(acc, w, rows) {
+  let r;
+  try {
+    r = await meta.getAll(`/${acc.id}/insights`, {
+      level: 'campaign',
+      fields: 'campaign_id,campaign_name,objective,spend,impressions,clicks,actions',
+      time_range: { since: w.since, until: w.until },
+      time_increment: 1,
+      limit: 500,
+    });
+  } catch (e) {
+    if (spanDays(w) <= SPLIT_DAYS) {
+      console.error(`  ${acc.name} ${w.since}..${w.until} ERROR: ${e.message}`);
+      return 1;
+    }
+    const subs = windows(w.since, w.until, SPLIT_DAYS);
+    console.error(`  ${acc.name} ${w.since}..${w.until} failed — retrying as ${subs.length}×${SPLIT_DAYS}d: ${e.message}`);
+    let failed = 0;
+    for (const sw of subs) {
+      await sleep(4000);
+      failed += await fetchWindow(acc, sw, rows);
+    }
+    return failed;
+  }
+  for (const x of r) {
+    const reg = (x.actions || []).find(a => a.action_type === 'complete_registration')?.value || 0;
+    rows.push({
+      account: acc.name, date: x.date_start,
+      campaign_id: x.campaign_id, campaign: x.campaign_name, objective: x.objective,
+      spend: +x.spend || 0, impressions: +x.impressions || 0, clicks: +x.clicks || 0,
+      reg: +reg || 0,
+    });
+  }
+  console.error(`  ${acc.name} ${w.since}..${w.until}: ${r.length} rows`);
+  fs.writeFileSync('.cache/dashboard_daily.json', JSON.stringify({ since, until, rows }));
+  return 0;
+}
+
 const main = async () => {
   const wins = windows(since, until, CHUNK);
   console.error(`Fetching daily campaign insights ${since} → ${until} — ${wins.length} chunks × ${ACCOUNTS.length} accounts\n`);
@@ -41,35 +89,11 @@ const main = async () => {
   let failed = 0;
   for (const acc of ACCOUNTS) {
     for (const w of wins) {
-      let r;
-      try {
-        r = await meta.getAll(`/${acc.id}/insights`, {
-          level: 'campaign',
-          fields: 'campaign_id,campaign_name,objective,spend,impressions,clicks,actions',
-          time_range: { since: w.since, until: w.until },
-          time_increment: 1,
-          limit: 500,
-        });
-      } catch (e) {
-        console.error(`  ${acc.name} ${w.since}..${w.until} ERROR: ${e.message}`);
-        failed++;
-        continue;
-      }
-      for (const x of r) {
-        const reg = (x.actions || []).find(a => a.action_type === 'complete_registration')?.value || 0;
-        rows.push({
-          account: acc.name, date: x.date_start,
-          campaign_id: x.campaign_id, campaign: x.campaign_name, objective: x.objective,
-          spend: +x.spend || 0, impressions: +x.impressions || 0, clicks: +x.clicks || 0,
-          reg: +reg || 0,
-        });
-      }
-      console.error(`  ${acc.name} ${w.since}..${w.until}: ${r.length} rows`);
-      fs.writeFileSync('.cache/dashboard_daily.json', JSON.stringify({ since, until, rows }));
+      failed += await fetchWindow(acc, w, rows);
       await sleep(4000);
     }
   }
-  console.error(`\nSaved ${rows.length} rows to .cache/dashboard_daily.json (${failed} chunk(s) failed)`);
+  console.error(`\nSaved ${rows.length} rows to .cache/dashboard_daily.json (${failed} window(s) failed)`);
   if (failed) process.exitCode = 1;
 };
 main()

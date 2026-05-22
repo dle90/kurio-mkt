@@ -71,4 +71,8 @@ const main = async () => {
   console.error(`\nSaved ${rows.length} rows to .cache/dashboard_daily.json (${failed} chunk(s) failed)`);
   if (failed) process.exitCode = 1;
 };
-main().catch(e => { console.error('Fatal:', e); process.exit(1); });
+main()
+  // Meta client keeps HTTP keep-alive sockets open, so the event loop never
+  // drains — exit explicitly once the work is done instead of hanging.
+  .then(() => process.exit(process.exitCode || 0))
+  .catch(e => { console.error('Fatal:', e); process.exit(1); });

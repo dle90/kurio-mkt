@@ -10,6 +10,7 @@ import { meta } from '../client.js';
 const ACCOUNTS = [
   { id: 'act_1071893357737329', name: 'Kurio 2' },
   { id: 'act_930175825635997',  name: 'Kurio 3' },
+  { id: 'act_1069029708221793', name: 'Kurio 5' },
 ];
 const DAYS = +(process.env.DAYS || 60);
 const CHUNK = +(process.env.CHUNK || 15);

@@ -231,33 +231,46 @@ function rosterPanel(r) {
   const escr = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const acctClass = a => a === 'Kurio 2' ? 'k2' : a === 'Kurio 3' ? 'k3' : 'k5';
   const cprClass = c => c == null ? '' : c <= r.scale_cpr ? 'good' : c >= r.cut_cpr ? 'bad' : c > r.target_cpr ? 'warn' : '';
+  const roasClass = v => v == null ? 'muted' : v >= 0.9 ? 'good' : v < 0.4 ? 'bad' : v < 0.7 ? 'warn' : '';
+  const roasCell = a => {
+    if (a.code_roas == null) return `<td class="num muted">${a.code ? '—' : 'n/a'}</td>`;
+    const conf = a.code_confidence === 'token' ? '?' : '';
+    const title = `${a.code_roas_window || ''} ROAS for code ${a.code || ''}${conf ? ' (low-confidence match)' : ''}`;
+    return `<td class="num ${roasClass(a.code_roas)}" title="${escr(title)}">${a.code_roas.toFixed(2)}${conf}</td>`;
+  };
   const row = (a, extra) => `<tr>
     <td class="lbl-name">${escr(a.campaign_name || '')} <span class="muted">›</span> ${escr(a.adset_name || '')}</td>
     <td><span class="acct ${acctClass(a.account)}">${escr(a.account)}</span></td>
+    <td class="muted code">${escr(a.code || '—')}</td>
     <td class="num">${fmt(a.spend_7d)}</td>
     <td class="num">${a.reg_7d}</td>
-    <td class="num ${cprClass(a.cpr_7d)}">${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'}</td>${extra || ''}
+    <td class="num ${cprClass(a.cpr_7d)}">${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'}</td>
+    ${roasCell(a)}${extra || ''}
   </tr>`;
-  const head = withReason => `<thead><tr><th>Campaign / Adset</th><th>Acct</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th>${withReason ? '<th>Reason</th>' : ''}</tr></thead>`;
-  const block = (id, title, list, tag, withReason) => `<details class="roster-bucket roster-${tag.toLowerCase()}" ${tag === 'PICK' || tag === 'CUT' || tag === 'FATIGUE' ? 'open' : ''}>
+  const head = withReason => `<thead><tr><th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th>${withReason ? '<th>Reason</th>' : ''}</tr></thead>`;
+  const defaultOpen = new Set(['PICK', 'WATCH', 'CUT', 'FATIGUE']);
+  const block = (id, title, list, tag, withReason) => `<details class="roster-bucket roster-${tag.toLowerCase()}" ${defaultOpen.has(tag) ? 'open' : ''}>
     <summary><span class="rtag rtag-${tag.toLowerCase()}">${tag}</span> ${escr(title)} <span class="muted">(${list.length})</span></summary>
     ${list.length ? `<table class="roster-tbl">${head(withReason)}<tbody>${list.map(a => row(a, withReason ? `<td class="muted">${escr(a.note)}</td>` : '')).join('')}</tbody></table>` : '<p class="muted" style="margin:8px 0 0 18px">(none)</p>'}
   </details>`;
   const sum = r.summary;
+  const cov = r.roas_coverage;
   return `
 <section>
   <h2>Ad-set roster for the week — actions to take</h2>
-  <p class="h2sub">Snapshot from <code>${escr(r.file)}</code>. Live ad sets: <b>${sum.live}</b>. 7d totals: spend <b>${fmt(sum.spend_7d)}</b> VND · reg <b>${sum.reg_7d}</b> · blended CPR <b>${sum.reg_7d ? fmt(sum.spend_7d / sum.reg_7d) : '—'}</b> VND.</p>
+  <p class="h2sub">Snapshot from <code>${escr(r.file)}</code>. Live ad sets: <b>${sum.live}</b>. 7d totals: spend <b>${fmt(sum.spend_7d)}</b> VND · reg <b>${sum.reg_7d}</b> · blended CPR <b>${sum.reg_7d ? fmt(sum.spend_7d / sum.reg_7d) : '—'}</b> VND.${cov ? ` ROAS overlay: ${cov.with_roas}/${cov.total_live} (${Math.round(cov.with_roas / cov.total_live * 100)}%) carry code-level ROAS. ROAS values marked "?" are from low-confidence code matches and are not gated.` : ''}</p>
   <div class="panel">
     <div class="roster-counts">
       <span class="rtag rtag-pick">PICK</span> top 5
       <span class="rtag rtag-scale">SCALE</span> ${sum.scale}
+      <span class="rtag rtag-watch">WATCH</span> ${sum.watch ?? 0}
       <span class="rtag rtag-cut">CUT</span> ${sum.cut}
       <span class="rtag rtag-fatigue">FATIGUE</span> ${sum.fatigue}
       <span class="rtag rtag-hold">HOLD</span> ${sum.hold}
     </div>
-    ${block('pick', 'Ad-sets of the day — top 5 lowest 7d CPR (≥3 reg)', r.picks, 'PICK', false)}
+    ${block('pick', 'Ad-sets of the day — top 5 by blended low-CPR × high-ROAS score (≥3 reg)', r.picks, 'PICK', false)}
     ${block('scale', 'SCALE — increase budget tomorrow', r.scale, 'SCALE', false)}
+    ${block('watch', 'WATCH — cheap CPR but code ROAS marginal (0.4–0.7) — verify before scaling', r.watch || [], 'WATCH', true)}
     ${block('cut', 'CUT — pause / kill', r.cut, 'CUT', true)}
     ${block('fatigue', 'FATIGUE — refresh creative (CPR drift > 1.5×)', r.fatigue, 'FATIGUE', true)}
   </div>
@@ -302,8 +315,9 @@ footer{padding:24px 36px;border-top:1px solid var(--border);color:var(--muted);f
 footer code{background:var(--panel);padding:1px 5px;border-radius:3px}
 .roster-counts{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:14px;align-items:center}
 .rtag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff;margin-right:4px}
-.rtag-pick{background:#10b981}.rtag-scale{background:#3b82f6}.rtag-cut{background:#ef4444}
+.rtag-pick{background:#10b981}.rtag-scale{background:#3b82f6}.rtag-watch{background:#a855f7}.rtag-cut{background:#ef4444}
 .rtag-fatigue{background:#f59e0b}.rtag-hold{background:#9ca3af}
+.code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px}
 .roster-bucket{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
 .roster-bucket:first-of-type{border-top:none;padding-top:0;margin-top:0}
 .roster-bucket summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0;list-style:none}

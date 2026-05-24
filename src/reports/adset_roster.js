@@ -17,6 +17,92 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { meta } from '../client.js';
+import { loadAttribution } from '../roas/attribution.js';
+
+// ---- CSV → Map(code → {ytd_roas, apr_may_roas, m_2026_05_roas}) ----
+function parseCSV(text) {
+  const out = [];
+  for (const line of text.replace(/^﻿/, '').split(/\r?\n/)) {
+    if (!line) continue;
+    const cells = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQ) {
+        if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else cur += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ',') { cells.push(cur); cur = ''; }
+        else cur += c;
+      }
+    }
+    cells.push(cur);
+    out.push(cells);
+  }
+  return out;
+}
+// Local code resolver: prefers the LONGEST code from codeSet that appears as a
+// substring of the (campaign + adset) name, after stripping separators. This
+// fixes a bug where attribution.js's resolveAd picks the shorter base code
+// (e.g. `code83`) when the actual LP-stamped code is the longer xpage variant
+// (e.g. `83-xpage-kv`). High-confidence matches (substring) gate ROAS decisions;
+// low-confidence (fallback to attribution.resolveAd) doesn't.
+function normalizeForMatch(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+// Variant suffixes that appear in real codes (xpage / xp / kv / reup / tg / lt).
+// If the corpus contains one but the matched code's normalized form does not,
+// the match is incomplete — demote confidence so we don't gate ROAS on it.
+const VARIANT_SUFFIXES = ['xpagekv', 'xpage', 'reup', 'kv', 'tg', 'lt', 'xp'];
+
+function smartResolve(adset, campaign, codeSet, fallback) {
+  const corpus = normalizeForMatch(`${campaign} ${adset}`);
+  let best = null;
+  for (const code of codeSet) {
+    const cnorm = normalizeForMatch(code);
+    if (cnorm.length < 4) continue;  // single digits / short tokens too noisy
+    if (corpus.includes(cnorm) && (!best || cnorm.length > best.normLen)) {
+      best = { code, normLen: cnorm.length, cnorm };
+    }
+  }
+  if (best) {
+    const corpusHasSuffix = VARIANT_SUFFIXES.find(sfx => corpus.includes(sfx));
+    const matchHasSuffix = corpusHasSuffix && best.cnorm.includes(corpusHasSuffix);
+    return { code: best.code, confidence: (corpusHasSuffix && !matchHasSuffix) ? 'token' : 'substring' };
+  }
+  if (fallback) {
+    const code = fallback({ ad_name_norm: '', adset_name: adset || '', campaign_name: campaign || '' });
+    if (code) return { code, confidence: 'token' };
+  }
+  return { code: null, confidence: null };
+}
+
+function loadCodeRoas(p = 'data/roas-codes-ranked.csv') {
+  if (!fs.existsSync(p)) return new Map();
+  const rows = parseCSV(fs.readFileSync(p, 'utf8'));
+  if (rows.length < 2) return new Map();
+  const header = rows[0];
+  const find = (...candidates) => {
+    for (const name of candidates) {
+      const i = header.findIndex(h => h.trim() === name);
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+  const codeI = find('Code');
+  const ytdI = find('YTD ROAS');
+  const aprMayI = find('Apr+May ROAS');
+  const currMoI = find('2026-05 ROAS', '2026-04 ROAS');
+  const m = new Map();
+  for (let r = 1; r < rows.length; r++) {
+    const code = (rows[r][codeI] || '').trim().toLowerCase();
+    if (!code) continue;
+    const num = i => { const v = parseFloat(rows[r][i]); return isFinite(v) ? v : null; };
+    m.set(code, { ytd_roas: num(ytdI), apr_may_roas: num(aprMayI), curr_mo_roas: num(currMoI) });
+  }
+  return m;
+}
 
 const ACCOUNTS = [
   { id: 'act_1071893357737329', name: 'Kurio 2' },
@@ -25,14 +111,19 @@ const ACCOUNTS = [
 ];
 
 const TARGET_CPR = 350_000;       // VND, baseline from FINDINGS
-const SCALE_CPR  = TARGET_CPR * 0.7;   // 245k — clear winner
-const CUT_CPR    = TARGET_CPR * 2.0;   // 700k — clear loser
+const SCALE_CPR  = TARGET_CPR * 0.7;   // 245k — clear winner on CPR alone
+const CUT_CPR    = TARGET_CPR * 2.0;   // 700k — clear loser on CPR alone
 const FATIGUE_RATIO = 1.5;
 const MIN_VOL_FOR_CUT = 3;
 const MIN_VOL_FOR_SCALE = 5;
 const MIN_VOL_FOR_PICK = 3;
 const DEAD_FLOOR = 50_000;        // both periods under this → already off-roster
 const ZERO_REG_BURN = 500_000;    // 7d spend with 0 reg → cut
+// ROAS gates (per code, Apr+May aggregate from data/roas-codes-ranked.csv).
+// Apr+May was chosen as the stable signal: 2 months of maturation, attribution
+// rate is healthy (~60% per FINDINGS), spans the post-IKMC window.
+const SCALE_ROAS_MIN = 0.7;       // below this → don't scale, hold and verify
+const CUT_ROAS_MAX = 0.4;         // below this + cheap CPR → cheap-junk leads, CUT
 const REG_TYPE = 'complete_registration';
 const fmt = n => Math.round(n).toLocaleString('en-US');
 
@@ -69,6 +160,19 @@ const main = async () => {
   console.error(`  7d window:  ${D7_SINCE} .. ${YDAY}`);
   console.error(`  28d window: ${D28_SINCE} .. ${YDAY}\n`);
 
+  // ---- optional ROAS overlay (code-level Apr+May ROAS) ----
+  let codeSet = null, fallbackResolve = null;
+  let codeRoas = new Map();
+  try {
+    const attr = loadAttribution();
+    codeSet = attr.codeSet;
+    fallbackResolve = attr.resolveAd;
+    codeRoas = loadCodeRoas();
+    console.error(`ROAS overlay loaded: ${codeRoas.size} codes from data/roas-codes-ranked.csv\n`);
+  } catch (e) {
+    console.error(`ROAS overlay UNAVAILABLE (${e.message.slice(0, 80)}). Classifier will run on CPR only.\n`);
+  }
+
   const all = [];
   for (const acc of ACCOUNTS) {
     console.error(`Fetching ${acc.name} ...`);
@@ -87,6 +191,10 @@ const main = async () => {
       const s28 = r28?.spend || 0,  reg28 = r28?.reg || 0;
       const sP  = Math.max(0, s28 - s7);
       const regP = Math.max(0, reg28 - reg7);
+      const resolved = codeSet
+        ? smartResolve(base.adset_name, base.campaign_name, codeSet, fallbackResolve)
+        : { code: null, confidence: null };
+      const cr = resolved.code ? codeRoas.get(resolved.code) : null;
       all.push({
         account: acc.name,
         adset_id: id,
@@ -98,16 +206,37 @@ const main = async () => {
         cpr_7d: reg7 ? s7 / reg7 : null,
         cpr_prior: regP ? sP / regP : null,
         cpr_28d: reg28 ? s28 / reg28 : null,
+        code: resolved.code,
+        code_confidence: resolved.confidence,
+        code_roas: cr?.apr_may_roas ?? cr?.ytd_roas ?? null,
+        code_roas_window: cr?.apr_may_roas != null ? 'Apr+May' : (cr?.ytd_roas != null ? 'YTD' : null),
       });
     }
   }
 
-  // Classify
+  // Classify — CPR-based, with ROAS overlay when the adset's code has data
   const classify = a => {
     if (a.spend_7d < DEAD_FLOOR && a.spend_prior < DEAD_FLOOR) return { tag: 'DEAD', note: 'both periods <50k' };
     if (a.reg_7d === 0 && a.spend_7d >= ZERO_REG_BURN) return { tag: 'CUT', note: `0 reg burning ${fmt(a.spend_7d)}` };
     if (a.cpr_7d != null && a.cpr_7d >= CUT_CPR && a.reg_7d >= MIN_VOL_FOR_CUT) return { tag: 'CUT', note: `CPR ${fmt(a.cpr_7d)} ≥ 2×target` };
-    if (a.cpr_7d != null && a.cpr_7d <= SCALE_CPR && a.reg_7d >= MIN_VOL_FOR_SCALE) return { tag: 'SCALE', note: `CPR ${fmt(a.cpr_7d)} ≤ 245k, ${a.reg_7d} reg` };
+
+    const cheapWithVol = a.cpr_7d != null && a.cpr_7d <= SCALE_CPR && a.reg_7d >= MIN_VOL_FOR_SCALE;
+    // ROAS gating only applies on HIGH-confidence code matches. Token-fallback
+    // resolutions are too easy to get wrong (e.g. `code83+86_reup` → `code83`
+    // instead of `code83-reup`) — gating on those would mis-classify winners.
+    const roasIsTrustworthy = cheapWithVol && a.code_roas != null && a.code_confidence === 'substring';
+    if (roasIsTrustworthy && a.code_roas < CUT_ROAS_MAX) {
+      return { tag: 'CUT', note: `cheap CPR ${fmt(a.cpr_7d)} but code "${a.code}" ROAS ${a.code_roas.toFixed(2)} (${a.code_roas_window}) — junk leads` };
+    }
+    if (roasIsTrustworthy && a.code_roas < SCALE_ROAS_MIN) {
+      return { tag: 'WATCH', note: `CPR ${fmt(a.cpr_7d)} good but code "${a.code}" ROAS ${a.code_roas.toFixed(2)} (${a.code_roas_window}) — verify before scaling` };
+    }
+    if (cheapWithVol) {
+      const roasNote = a.code_roas != null
+        ? `, ROAS ${a.code_roas.toFixed(2)}${a.code_confidence === 'token' ? '?' : ''}`
+        : (a.code ? `, ROAS n/a` : '');
+      return { tag: 'SCALE', note: `CPR ${fmt(a.cpr_7d)} ≤ 245k, ${a.reg_7d} reg${roasNote}` };
+    }
     if (a.cpr_7d != null && a.cpr_prior != null && a.reg_7d >= 3 && a.reg_prior >= 3 && a.cpr_7d > a.cpr_prior * FATIGUE_RATIO) {
       return { tag: 'FATIGUE', note: `CPR ${fmt(a.cpr_prior)} → ${fmt(a.cpr_7d)} (×${(a.cpr_7d / a.cpr_prior).toFixed(2)})` };
     }
@@ -122,8 +251,13 @@ const main = async () => {
   const line = '='.repeat(108);
 
   // ===== PICKS for tomorrow =====
-  const pickable = live.filter(a => a.cpr_7d != null && a.reg_7d >= MIN_VOL_FOR_PICK && a.tag !== 'CUT' && a.tag !== 'FATIGUE')
-    .sort((x, y) => x.cpr_7d - y.cpr_7d);
+  // Blended score = (target_cpr / cpr_7d) * (1 + code_roas).
+  // Lower CPR → higher score. Known good ROAS amplifies. Unknown ROAS = neutral (×1).
+  // Known bad ROAS is already filtered out (those are CUT or WATCH).
+  const pickScore = a => (TARGET_CPR / a.cpr_7d) * (1 + (a.code_roas ?? 0));
+  const pickable = live.filter(a => a.cpr_7d != null && a.reg_7d >= MIN_VOL_FOR_PICK
+    && a.tag !== 'CUT' && a.tag !== 'FATIGUE' && a.tag !== 'WATCH')
+    .sort((x, y) => pickScore(y) - pickScore(x));
   P(line);
   P(`  AD-SETS OF THE DAY — top 5 lowest 7d CPR (min ${MIN_VOL_FOR_PICK} reg) — candidates to scale tomorrow`);
   P(line);
@@ -159,6 +293,7 @@ const main = async () => {
     if (list.length > maxRows) P(`  ... +${list.length - maxRows} more`);
   };
   printGroup('SCALE — increase budget tomorrow', byTag('SCALE'));
+  printGroup('WATCH — cheap CPR but ROAS marginal — verify before scaling', byTag('WATCH'));
   printGroup('CUT — pause / kill', byTag('CUT'));
   printGroup('FATIGUE — refresh creative (CPR drift > 1.5×)', byTag('FATIGUE'));
 
@@ -176,7 +311,9 @@ const main = async () => {
   P('  SUMMARY');
   P(line);
   P(`  Live ad sets (>=50k either period):  ${live.length}`);
-  P(`  Of which: SCALE ${byTag('SCALE').length}  |  CUT ${byTag('CUT').length}  |  FATIGUE ${byTag('FATIGUE').length}  |  HOLD ${hold.length}`);
+  P(`  Of which: SCALE ${byTag('SCALE').length}  |  WATCH ${byTag('WATCH').length}  |  CUT ${byTag('CUT').length}  |  FATIGUE ${byTag('FATIGUE').length}  |  HOLD ${hold.length}`);
+  const withRoas = live.filter(a => a.code_roas != null).length;
+  P(`  ROAS coverage: ${withRoas}/${live.length} live ad sets have code-level ROAS (${Math.round(withRoas / live.length * 100)}%)`);
   P(`  Dropped (DEAD):  ${all.length - live.length}`);
   P(`  7d totals:  spend ${fmt(totSpend7d)} VND  |  reg ${totReg7d}  |  blended CPR ${totReg7d ? fmt(totSpend7d / totReg7d) : '—'} VND`);
   P(`  Target CPR baseline: ${fmt(TARGET_CPR)} VND  (scale ≤${fmt(SCALE_CPR)} ; cut ≥${fmt(CUT_CPR)})`);
@@ -193,24 +330,28 @@ const main = async () => {
   fs.writeFileSync(OUT_JSON, JSON.stringify({
     yday: YDAY, d7_since: D7_SINCE, d28_since: D28_SINCE,
     target_cpr: TARGET_CPR, scale_cpr: SCALE_CPR, cut_cpr: CUT_CPR,
+    scale_roas_min: SCALE_ROAS_MIN, cut_roas_max: CUT_ROAS_MAX,
+    roas_coverage: { with_roas: live.filter(a => a.code_roas != null).length, total_live: live.length },
     summary: {
-      live: live.length, scale: byTag('SCALE').length, cut: byTag('CUT').length,
-      fatigue: byTag('FATIGUE').length, hold: byTag('HOLD').length, dead: all.length - live.length,
-      spend_7d: totSpend7d, reg_7d: totReg7d,
+      live: live.length, scale: byTag('SCALE').length, watch: byTag('WATCH').length,
+      cut: byTag('CUT').length, fatigue: byTag('FATIGUE').length, hold: byTag('HOLD').length,
+      dead: all.length - live.length, spend_7d: totSpend7d, reg_7d: totReg7d,
     },
     picks: pickable.slice(0, 5).map(({ tag, note, ...rest }) => rest),
-    scale: byTag('SCALE'), cut: byTag('CUT'), fatigue: byTag('FATIGUE'),
+    scale: byTag('SCALE'), watch: byTag('WATCH'), cut: byTag('CUT'), fatigue: byTag('FATIGUE'),
   }, null, 2));
   console.error(`\nDone. Snapshots written to:\n  ${OUT_MD}\n  ${OUT_HTML}\n  ${OUT_JSON}`);
 };
 
 function renderMarkdown({ all, live, byTag, pickable, totSpend7d, totReg7d, YDAY, D7_SINCE, D28_SINCE }) {
   const fmt = n => Math.round(n).toLocaleString('en-US');
+  const roasStr = a => a.code_roas != null ? a.code_roas.toFixed(2) : (a.code ? '—' : 'n/a');
   const escape = s => String(s || '').replace(/\|/g, '\\|');
-  const row = a => `| ${escape(`${a.campaign_name || ''} › ${a.adset_name || ''}`)} | ${escape(a.account)} | ${fmt(a.spend_7d)} | ${a.reg_7d} | ${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'} |`;
+  const row = a => `| ${escape(`${a.campaign_name || ''} › ${a.adset_name || ''}`)} | ${escape(a.account)} | ${escape(a.code || '—')} | ${fmt(a.spend_7d)} | ${a.reg_7d} | ${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'} | ${roasStr(a)} |`;
   const rowWithReason = a => `${row(a)} ${escape(a.note)} |`;
-  const scale = byTag('SCALE'), cut = byTag('CUT'), fatigue = byTag('FATIGUE'), hold = byTag('HOLD');
+  const scale = byTag('SCALE'), watch = byTag('WATCH'), cut = byTag('CUT'), fatigue = byTag('FATIGUE'), hold = byTag('HOLD');
   const dead = all.length - live.length;
+  const withRoas = live.filter(a => a.code_roas != null).length;
   return `# Ad-set roster — ${YDAY}
 
 Window: 7d (${D7_SINCE} → ${YDAY}) and 28d (${D28_SINCE} → ${YDAY}).
@@ -219,40 +360,49 @@ Generated by [src/reports/adset_roster.js](../src/reports/adset_roster.js).
 ## Summary
 
 - Live ad sets (≥50k either period): **${live.length}**
-- SCALE: **${scale.length}** · CUT: **${cut.length}** · FATIGUE: **${fatigue.length}** · HOLD: ${hold.length} · Dropped (DEAD): ${dead}
+- SCALE: **${scale.length}** · WATCH: **${watch.length}** · CUT: **${cut.length}** · FATIGUE: **${fatigue.length}** · HOLD: ${hold.length} · Dropped (DEAD): ${dead}
 - 7d totals: spend **${fmt(totSpend7d)} VND** · reg **${totReg7d}** · blended CPR **${totReg7d ? fmt(totSpend7d / totReg7d) : '—'} VND**
+- ROAS overlay: ${withRoas}/${live.length} live ad sets carry code-level ROAS (Apr+May aggregate). SCALE requires ROAS ≥ 0.7 when known. WATCH = cheap CPR but ROAS in 0.4–0.7. Cheap CPR + ROAS < 0.4 escalates to CUT (junk leads).
 
 ---
 
-## AD-SETS OF THE DAY — top 5 lowest 7d CPR (≥3 reg)
+## AD-SETS OF THE DAY — top 5 by blended score (lower CPR × higher ROAS, ≥3 reg)
 
-| Rank | Campaign / Adset | Acct | 7d spend | Reg | 7d CPR |
-|---:|---|---|---:|---:|---:|
-${pickable.slice(0, 5).map((a, i) => `| ${i + 1} | ${escape(`${a.campaign_name || ''} › ${a.adset_name || ''}`)} | ${escape(a.account)} | ${fmt(a.spend_7d)} | ${a.reg_7d} | ${fmt(a.cpr_7d)} |`).join('\n')}
+| Rank | Campaign / Adset | Acct | Code | 7d spend | Reg | 7d CPR | ROAS |
+|---:|---|---|---|---:|---:|---:|---:|
+${pickable.slice(0, 5).map((a, i) => `| ${i + 1} | ${escape(`${a.campaign_name || ''} › ${a.adset_name || ''}`)} | ${escape(a.account)} | ${escape(a.code || '—')} | ${fmt(a.spend_7d)} | ${a.reg_7d} | ${fmt(a.cpr_7d)} | ${roasStr(a)} |`).join('\n')}
 
 ---
 
 ## SCALE (${scale.length}) — increase budget tomorrow
 
-| Campaign / Adset | Acct | 7d spend | Reg | 7d CPR |
-|---|---|---:|---:|---:|
-${scale.map(row).join('\n') || '| (none) | | | | |'}
+| Campaign / Adset | Acct | Code | 7d spend | Reg | 7d CPR | ROAS |
+|---|---|---|---:|---:|---:|---:|
+${scale.map(row).join('\n') || '| (none) | | | | | | |'}
+
+---
+
+## WATCH (${watch.length}) — cheap CPR but code ROAS marginal (0.4–0.7) — verify before scaling
+
+| Campaign / Adset | Acct | Code | 7d spend | Reg | 7d CPR | ROAS | Reason |
+|---|---|---|---:|---:|---:|---:|---|
+${watch.map(rowWithReason).join('\n') || '| (none) | | | | | | | |'}
 
 ---
 
 ## CUT (${cut.length}) — pause / kill
 
-| Campaign / Adset | Acct | 7d spend | Reg | 7d CPR | Reason |
-|---|---|---:|---:|---:|---|
-${cut.map(rowWithReason).join('\n') || '| (none) | | | | | |'}
+| Campaign / Adset | Acct | Code | 7d spend | Reg | 7d CPR | ROAS | Reason |
+|---|---|---|---:|---:|---:|---:|---|
+${cut.map(rowWithReason).join('\n') || '| (none) | | | | | | | |'}
 
 ---
 
 ## FATIGUE (${fatigue.length}) — refresh creative (CPR drift > 1.5×)
 
-| Campaign / Adset | Acct | 7d spend | Reg | 7d CPR | Drift |
-|---|---|---:|---:|---:|---|
-${fatigue.map(rowWithReason).join('\n') || '| (none) | | | | | |'}
+| Campaign / Adset | Acct | Code | 7d spend | Reg | 7d CPR | ROAS | Drift |
+|---|---|---|---:|---:|---:|---:|---|
+${fatigue.map(rowWithReason).join('\n') || '| (none) | | | | | | | |'}
 
 ---
 
@@ -265,21 +415,27 @@ Within target band — leave alone.
 function renderHtml({ all, live, byTag, pickable, totSpend7d, totReg7d, YDAY, D7_SINCE, D28_SINCE, TARGET_CPR, SCALE_CPR, CUT_CPR }) {
   const fmt = n => Math.round(n).toLocaleString('en-US');
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const scale = byTag('SCALE'), cut = byTag('CUT'), fatigue = byTag('FATIGUE'), hold = byTag('HOLD');
+  const scale = byTag('SCALE'), watch = byTag('WATCH'), cut = byTag('CUT'), fatigue = byTag('FATIGUE'), hold = byTag('HOLD');
   const dead = all.length - live.length;
   const blended = totReg7d ? totSpend7d / totReg7d : 0;
   const acctClass = a => a === 'Kurio 2' ? 'k2' : a === 'Kurio 3' ? 'k3' : 'k5';
   const cprClass = c => c == null ? '' : c <= SCALE_CPR ? 'good' : c >= CUT_CPR ? 'bad' : c > TARGET_CPR ? 'warn' : '';
+  const roasClass = r => r == null ? 'muted' : r >= 0.9 ? 'good' : r < 0.4 ? 'bad' : r < 0.7 ? 'warn' : '';
+  const roasCell = a => a.code_roas != null
+    ? `<td class="num ${roasClass(a.code_roas)}" title="${esc(a.code_roas_window || '')} ROAS for code ${esc(a.code || '')}">${a.code_roas.toFixed(2)}</td>`
+    : `<td class="num muted">${a.code ? '—' : 'n/a'}</td>`;
   const row = (a, extra) => `<tr>
     <td>${esc(a.campaign_name || '')} <span class="muted">›</span> ${esc(a.adset_name || '')}</td>
     <td><span class="acct ${acctClass(a.account)}">${esc(a.account)}</span></td>
+    <td class="muted code">${esc(a.code || '—')}</td>
     <td class="num">${fmt(a.spend_7d)}</td>
     <td class="num">${a.reg_7d}</td>
-    <td class="num ${cprClass(a.cpr_7d)}">${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'}</td>${extra || ''}
+    <td class="num ${cprClass(a.cpr_7d)}">${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'}</td>
+    ${roasCell(a)}${extra || ''}
   </tr>`;
 
   const tableHead = withReason => `<thead><tr>
-    <th>Campaign / Adset</th><th>Acct</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th>${withReason ? '<th>Reason</th>' : ''}
+    <th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th>${withReason ? '<th>Reason</th>' : ''}
   </tr></thead>`;
 
   const section = (id, title, list, tag, withReason) => `
@@ -321,9 +477,11 @@ function renderHtml({ all, live, byTag, pickable, totSpend7d, totReg7d, YDAY, D7
   .tag { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
   .tag-pick    { background: #10b981; color: white; }
   .tag-scale   { background: #3b82f6; color: white; }
+  .tag-watch   { background: #a855f7; color: white; }
   .tag-cut     { background: #ef4444; color: white; }
   .tag-fatigue { background: #f59e0b; color: white; }
   .tag-hold    { background: #9ca3af; color: white; }
+  .code        { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; }
   .nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 4px; }
   .nav a { padding: 4px 10px; background: #e5e7eb; color: #1f2937; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500; }
   .nav a:hover { background: #d1d5db; }
@@ -338,6 +496,7 @@ function renderHtml({ all, live, byTag, pickable, totSpend7d, totReg7d, YDAY, D7
 <div class="summary">
   <div class="stat"><span class="label">Live ad sets</span><span class="value">${live.length}</span></div>
   <div class="stat"><span class="label">SCALE</span><span class="value">${scale.length}</span></div>
+  <div class="stat"><span class="label">WATCH</span><span class="value">${watch.length}</span></div>
   <div class="stat"><span class="label">CUT</span><span class="value">${cut.length}</span></div>
   <div class="stat"><span class="label">FATIGUE</span><span class="value">${fatigue.length}</span></div>
   <div class="stat"><span class="label">HOLD</span><span class="value">${hold.length}</span></div>
@@ -350,25 +509,29 @@ function renderHtml({ all, live, byTag, pickable, totSpend7d, totReg7d, YDAY, D7
 <nav class="nav">
   <a href="#pick">Picks</a>
   <a href="#scale">SCALE</a>
+  <a href="#watch">WATCH</a>
   <a href="#cut">CUT</a>
   <a href="#fatigue">FATIGUE</a>
   <a href="#hold">HOLD</a>
 </nav>
 
 <section id="pick" class="bucket">
-  <h2><span class="tag tag-pick">PICK</span> Ad-sets of the day — top 5 lowest 7d CPR (≥3 reg)</h2>
+  <h2><span class="tag tag-pick">PICK</span> Ad-sets of the day — top 5 by blended (low CPR × high ROAS) score, ≥3 reg</h2>
   <table>${tableHead(false)}<tbody>
     ${pickable.slice(0, 5).map((a, i) => `<tr>
       <td><span class="rank">${i + 1}</span>${esc(a.campaign_name || '')} <span class="muted">›</span> ${esc(a.adset_name || '')}</td>
       <td><span class="acct ${acctClass(a.account)}">${esc(a.account)}</span></td>
+      <td class="muted code">${esc(a.code || '—')}</td>
       <td class="num">${fmt(a.spend_7d)}</td>
       <td class="num">${a.reg_7d}</td>
       <td class="num ${cprClass(a.cpr_7d)}">${fmt(a.cpr_7d)}</td>
+      ${roasCell(a)}
     </tr>`).join('')}
   </tbody></table>
 </section>
 
 ${section('scale', 'SCALE — increase budget tomorrow', scale, 'SCALE', false)}
+${section('watch', 'WATCH — cheap CPR but code ROAS marginal (0.4–0.7) — verify before scaling', watch, 'WATCH', true)}
 ${section('cut', 'CUT — pause / kill', cut, 'CUT', true)}
 ${section('fatigue', 'FATIGUE — refresh creative (CPR drift > 1.5×)', fatigue, 'FATIGUE', true)}
 

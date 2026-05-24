@@ -104,6 +104,34 @@ function loadCodeRoas(p = 'data/roas-codes-ranked.csv') {
   return m;
 }
 
+// Fresh per-code ROAS from the cohort drill-down's rolling window. Written by
+// src/dashboard/cohort_drilldown.js as data/code-roas-window.json.
+function loadWindowRoas(p = 'data/code-roas-window.json') {
+  if (!fs.existsSync(p)) return null;
+  const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+  return { since: j.since, until: j.until, days: j.days, built_at: j.built_at,
+    codes: new Map(Object.entries(j.codes || {})) };
+}
+
+// Pick the freshest trustworthy ROAS for a code.
+//   1. cohort_drilldown window JSON (default 21d) if code has ≥1M spend AND ≥3 reg
+//   2. Apr+May aggregate from CSV
+//   3. YTD aggregate from CSV
+// Returns { roas, window, source } or { roas: null, window: null, source: null }.
+function resolveRoas(code, windowMap, csvMap) {
+  if (!code) return { roas: null, window: null, source: null };
+  const w = windowMap?.codes.get(code);
+  if (w && w.spend >= 1_000_000 && w.reg >= 3 && w.roas != null) {
+    return { roas: w.roas, window: `${windowMap.days}d window`, source: 'cohort-drilldown' };
+  }
+  const c = csvMap.get(code);
+  if (c?.apr_may_roas != null) return { roas: c.apr_may_roas, window: 'Apr+May', source: 'csv' };
+  if (c?.ytd_roas != null) return { roas: c.ytd_roas, window: 'YTD', source: 'csv' };
+  // Last resort — fresh window even if thin
+  if (w?.roas != null) return { roas: w.roas, window: `${windowMap.days}d window (thin)`, source: 'cohort-drilldown-thin' };
+  return { roas: null, window: null, source: null };
+}
+
 const ACCOUNTS = [
   { id: 'act_1071893357737329', name: 'Kurio 2' },
   { id: 'act_930175825635997',  name: 'Kurio 3' },
@@ -160,15 +188,21 @@ const main = async () => {
   console.error(`  7d window:  ${D7_SINCE} .. ${YDAY}`);
   console.error(`  28d window: ${D28_SINCE} .. ${YDAY}\n`);
 
-  // ---- optional ROAS overlay (code-level Apr+May ROAS) ----
+  // ---- optional ROAS overlay (code-level ROAS, fresh window preferred) ----
   let codeSet = null, fallbackResolve = null;
   let codeRoas = new Map();
+  let windowRoas = null;
   try {
     const attr = loadAttribution();
     codeSet = attr.codeSet;
     fallbackResolve = attr.resolveAd;
     codeRoas = loadCodeRoas();
-    console.error(`ROAS overlay loaded: ${codeRoas.size} codes from data/roas-codes-ranked.csv\n`);
+    windowRoas = loadWindowRoas();
+    if (windowRoas) {
+      console.error(`ROAS overlay loaded: ${windowRoas.codes.size} codes from data/code-roas-window.json (${windowRoas.days}d, ${windowRoas.since} → ${windowRoas.until})  +  ${codeRoas.size} codes from data/roas-codes-ranked.csv (Apr+May / YTD fallback)\n`);
+    } else {
+      console.error(`ROAS overlay loaded: ${codeRoas.size} codes from data/roas-codes-ranked.csv (Apr+May / YTD). For fresh 21d ROAS, run: node src/dashboard/cohort_drilldown.js\n`);
+    }
   } catch (e) {
     console.error(`ROAS overlay UNAVAILABLE (${e.message.slice(0, 80)}). Classifier will run on CPR only.\n`);
   }
@@ -194,7 +228,7 @@ const main = async () => {
       const resolved = codeSet
         ? smartResolve(base.adset_name, base.campaign_name, codeSet, fallbackResolve)
         : { code: null, confidence: null };
-      const cr = resolved.code ? codeRoas.get(resolved.code) : null;
+      const rr = resolveRoas(resolved.code, windowRoas, codeRoas);
       all.push({
         account: acc.name,
         adset_id: id,
@@ -208,8 +242,9 @@ const main = async () => {
         cpr_28d: reg28 ? s28 / reg28 : null,
         code: resolved.code,
         code_confidence: resolved.confidence,
-        code_roas: cr?.apr_may_roas ?? cr?.ytd_roas ?? null,
-        code_roas_window: cr?.apr_may_roas != null ? 'Apr+May' : (cr?.ytd_roas != null ? 'YTD' : null),
+        code_roas: rr.roas,
+        code_roas_window: rr.window,
+        code_roas_source: rr.source,
       });
     }
   }

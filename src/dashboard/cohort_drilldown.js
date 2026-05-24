@@ -294,3 +294,15 @@ footer code{background:var(--panel);padding:1px 5px;border-radius:3px}
 fs.writeFileSync('out/cohort_drilldown.html', html);
 P('');
 P(`Wrote out/cohort_drilldown.html  (${codeList.length} codes × ${days.length} days)`);
+
+// ---- 10. JSON export — per-code window totals for downstream consumers (roster) ----
+const CODE_ROAS_OUT = `data/code-roas-window.json`;
+fs.writeFileSync(CODE_ROAS_OUT, JSON.stringify({
+  since, until, days: DAYS, built_at: new Date().toISOString(),
+  totals: { spend: TS, reg: TR, rev: TV, roas: TS ? TV / TS : null },
+  codes: Object.fromEntries(codeList.map(c => {
+    const w = codeWin.get(c);
+    return [c, { spend: w.spend, reg: w.reg, rev: w.rev, roas: w.spend ? w.rev / w.spend : null }];
+  })),
+}, null, 2));
+P(`Wrote ${CODE_ROAS_OUT}                  (${codeList.length} codes, ${DAYS}d window)`);

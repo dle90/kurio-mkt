@@ -26,6 +26,7 @@
     "roas:actionable": "node src/roas/actionable.js",
     "roas:build": "node src/roas/fetch_meta_spend_monthly.js && node src/roas/fetch_getfly_orders_ytd.js && node src/roas/fetch_getfly_orders_recent.js && node src/roas/fetch_getfly_accounts.js && node src/roas/recompute_codes_ranked.js && node src/roas/compute.js && node src/roas/cohort_and_active.js",
     "roas:daily": "node src/reports/daily.js",
+    "report:salesperson": "node src/reports/salesperson.js",
     "roas:analyze:kv": "node src/roas/analyze_kv.js",
     "dashboard:fetch": "node src/dashboard/fetch.js",
     "dashboard": "node src/dashboard/build.js"

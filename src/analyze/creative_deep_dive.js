@@ -17,6 +17,22 @@ const pct = n => n == null ? '—' : (n * 100).toFixed(0) + '%';
 // ---- inputs ----
 const CREATIVE = JSON.parse(fs.readFileSync('.cache/meta_creative.json', 'utf8'));
 const WINDOW = JSON.parse(fs.readFileSync('data/code-roas-window.json', 'utf8'));
+const MONTHLY = JSON.parse(fs.readFileSync('.cache/meta_spend_monthly.json', 'utf8'));
+
+// ad_id -> { campaign_name, adset_name } from monthly spend data — this is where
+// the LP-stamped code usually lives (campaign names like CVS_TUANTA_25/07_code83-xpage-kv).
+// Without this enrichment the resolver only sees the ad's own name, which is often
+// a generic marketing title with no code.
+const AD_META = new Map();
+for (const r of MONTHLY) {
+  if (!r.ad_id) continue;
+  const cur = AD_META.get(r.ad_id);
+  // Keep the entry with the most recent month (newer campaign names if an ad got renamed)
+  if (!cur || (r.month || '') > (cur.month || '')) {
+    AD_META.set(r.ad_id, { campaign_name: r.campaign_name, adset_name: r.adset_name, month: r.month });
+  }
+}
+console.error(`Built ad_id → campaign/adset lookup for ${AD_META.size} ads`);
 
 // CSV parser (small)
 function parseCSV(text) {
@@ -124,10 +140,20 @@ function bodyFeatures(body) {
 // ---- 1. join creative → code → ROAS ----
 const codeIndex = new Map(); // code -> { creatives: [], ages: [], formats: {}, accounts: {} }
 let resolved = 0, unresolved = 0;
+let resolvedViaAdName = 0, resolvedViaCampaignAdset = 0;
 const allFeatures = [];
 for (const r of CREATIVE) {
   if (!r.creative) continue;
-  const { code, confidence } = smartResolve(r.ad_name, r.ad_name || '', '');
+  const meta = AD_META.get(r.ad_id) || {};
+  // Try ad_name alone first (some ad names like "code96" map directly), then fall back
+  // to the enriched campaign + adset names from monthly spend.
+  let resolution = smartResolve(r.ad_name, '', '');
+  if (resolution.code) resolvedViaAdName++;
+  else {
+    resolution = smartResolve(r.ad_name, meta.adset_name || '', meta.campaign_name || '');
+    if (resolution.code) resolvedViaCampaignAdset++;
+  }
+  const { code, confidence } = resolution;
   if (!code) { unresolved++; continue; }
   resolved++;
   if (!codeIndex.has(code)) codeIndex.set(code, {
@@ -150,6 +176,7 @@ for (const r of CREATIVE) {
   e.ages.push(Math.floor((Date.now() - Date.parse(r.created_time)) / 86400_000));
 }
 console.error(`Resolved ${resolved}/${resolved + unresolved} creatives to codes (${Math.round(resolved / (resolved + unresolved) * 100)}%)`);
+console.error(`  via ad_name alone: ${resolvedViaAdName}  ·  via campaign/adset enrichment: ${resolvedViaCampaignAdset}`);
 
 // ---- 2. attach ROAS ----
 const codeRows = [];

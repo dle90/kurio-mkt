@@ -7,10 +7,10 @@
 
 ## TL;DR — five things that change
 
-1. **The "3K/ngày anchor" is neutral for ROAS, not winning.** It's in 38 of 59 active codes (64%) but having it gives ROAS 0.64 — *identical* to not having it (0.64). The May FINDINGS-era claim that 15/15 winners had it was a CPR observation, not a ROAS one. **Keep it as a price floor; stop crediting it as a lever.**
-2. **The single biggest copy lever is the transformation arc** ("top 5", "9–10 điểm", "đỗ chuyên"). **1.93× ROAS lift** when present (0.77 vs 0.40). Double down.
-3. **Summer + EOY angles are real winners (1.64× and 1.58× lift respectively)** — these are exactly what June and the EOY-report-card window need. Lead Phase B with these, not with pain hooks.
-4. **Scarcity is poison.** 0.48× ROAS lift (0.40 vs 0.84). Used in 59% of codes. **Remove from all new creative.**
+1. **The "3K/ngày anchor" is neutral for ROAS, not winning.** It's in 37 of 58 active codes (64%) but having it gives ROAS 0.64 — *near-identical* to not having it (0.62). The May FINDINGS-era claim that 15/15 winners had it was a CPR observation, not a ROAS one. **Keep it as a price floor; stop crediting it as a lever.**
+2. **The single biggest copy lever is the transformation arc** ("top 5", "9–10 điểm", "đỗ chuyên"). **2.04× ROAS lift** when present (0.77 vs 0.38). Double down.
+3. **EOY + summer angles are real winners (1.64× and 1.31× lift respectively)** — these are exactly what late May and June need. Lead Phase B with these, not with pain hooks.
+4. **Scarcity is poison.** 0.49× ROAS lift (0.42 vs 0.85). Used in 64% of codes. **Remove from all new creative.**
 5. **`-xp` and `-reup` LP families beat `-xpage-kv` on ROAS.** Memory's "xpage-kv −43% CPR" claim was CPR-only and was about an older comparison. Current 21d ROAS by LP family: `xp 1.10`, `reup 1.02`, `xpage-kv 0.87`, `xpage 0.82`, `base 0.42`. **Make new LPs as `-xp` or `-reup` variants, not `-xpage-kv`.**
 
 ---
@@ -76,34 +76,36 @@ These currently have **window spend ≥ 5M AND ROAS ≥ 1.10** — they're payin
 
 ## 2. Copy patterns × ROAS — the new winning formula
 
-For each feature, present-vs-absent ROAS computed on the 59 codes with ≥1M window spend, weighted by spend.
+For each feature, present-vs-absent ROAS computed on the 58 codes with ≥1M window spend, weighted by spend. **Resolution coverage: 84% of 21d window spend** (329M of 391M VND across 175 codes — the body-feature analysis is meaningful at the spend level even though only 20% of historic *creatives* match by name).
 
 | Copy feature | Codes w/ feat | Codes w/o | ROAS w/ | ROAS w/o | **Lift** | Status |
 |---|---:|---:|---:|---:|---:|---|
-| **transformation arc** ("top 5", "9-10 điểm", "HSG") | 29 | 30 | 0.77 | 0.40 | **1.93×** | ⭐ keep + amplify |
-| **summer** ("hè", "3 tháng hè") | 6 | 53 | 0.99 | 0.60 | **1.64×** | ⭐ lead June-July |
-| **EOY report card** ("tổng kết", "giấy khen") | 8 | 51 | 0.93 | 0.59 | **1.58×** | ⭐ lead late May / early June |
-| anti-học-thêm | 33 | 26 | 0.72 | 0.54 | 1.33× | keep |
-| headline_caps | 31 | 28 | 0.69 | 0.56 | 1.22× | keep |
-| ai_tutor mention | 37 | 22 | 0.68 | 0.57 | 1.18× | keep (mild) |
-| emoji | 26 | 33 | 0.64 | 0.64 | 1.01× | neutral |
-| **3K/ngày anchor** | **38** | **21** | **0.64** | **0.64** | **1.00×** | **neutral — was overcredited** |
-| dad voice | 10 | 49 | 0.58 | 0.65 | 0.88× | neutral / slight neg |
-| exam mention | 12 | 47 | 0.57 | 0.66 | 0.87× | neutral / slight neg |
-| price-per-month | 32 | 27 | 0.56 | 0.71 | 0.80× | mild neg |
-| parent voice | 37 | 22 | 0.56 | 0.74 | 0.76× | slight neg (over-saturated) |
-| pain hook | 27 | 32 | 0.53 | 0.71 | 0.74× | **mild negative** (over-saturated) |
-| question hook | 9 | 50 | 0.49 | 0.67 | 0.73× | drop |
-| teacher voice | 24 | 35 | 0.48 | 0.71 | 0.68× | drop |
-| screen-addiction | 47 | 12 | 0.55 | 0.84 | 0.66× | execution-broken or saturated |
-| **scarcity** | **35** | **24** | **0.40** | **0.84** | **0.48×** | ⛔ **REMOVE** |
+| **transformation arc** ("top 5", "9-10 điểm", "HSG") | 31 | 27 | 0.77 | 0.38 | **2.04×** | ⭐⭐ amplify (now stronger) |
+| **EOY report card** ("tổng kết", "giấy khen") | 8 | 50 | 0.95 | 0.58 | **1.64×** | ⭐ lead late May / early June |
+| anti-học-thêm | 35 | 23 | 0.71 | 0.54 | 1.33× | keep |
+| **summer** ("hè", "3 tháng hè") | 8 | 50 | 0.80 | 0.61 | **1.31×** | ⭐ lead June-July (revised down from prior 1.64) |
+| headline_caps | 32 | 26 | 0.68 | 0.55 | 1.24× | keep |
+| ai_tutor mention | 40 | 18 | 0.66 | 0.58 | 1.12× | keep (mild) |
+| emoji | 26 | 32 | 0.67 | 0.61 | 1.09× | neutral |
+| **3K/ngày anchor** | **37** | **21** | **0.64** | **0.62** | **1.03×** | **neutral — confirmed overcredited** |
+| exam mention | 15 | 43 | 0.63 | 0.64 | 0.99× | neutral (was mildly neg) |
+| price-per-month | 31 | 27 | 0.62 | 0.65 | 0.96× | neutral (was mildly neg) |
+| question hook | 11 | 47 | 0.52 | 0.66 | 0.79× | drop |
+| parent voice | 38 | 20 | 0.56 | 0.73 | 0.77× | slight neg (over-saturated) |
+| screen-addiction | 49 | 9 | 0.59 | 0.77 | 0.76× | execution issue |
+| teacher voice | 26 | 32 | 0.49 | 0.71 | 0.69× | drop |
+| **dad voice** | **14** | **44** | **0.46** | **0.68** | **0.68×** | clearer negative w/ better resolution |
+| **pain hook** | **32** | **26** | **0.50** | **0.74** | **0.67×** | clearer negative |
+| **scarcity** | **37** | **21** | **0.42** | **0.85** | **0.49×** | ⛔ **REMOVE** |
 
 ### Surprises worth calling out
 
-- **Pain hook is mildly negative for ROAS** (0.74×). This is the most counterintuitive finding — the May FINDINGS doc called it core to the winning formula. Read: pain hooks bring cheap registrations but those leads don't convert to revenue as well as transformation-arc framings do.
-- **Parent voice is slightly negative (0.76×).** Hugely saturated (37 of 59 codes use it). Possible that ad fatigue / sameness is depressing ROAS.
-- **Scarcity is catastrophic (0.48× lift, 0.40 ROAS where present).** Used in 59% of codes — biggest single fix.
-- **Screen-addiction copy is broken in execution (0.66×).** The angle from `creative_blind_spots.md` was supposed to be promising; in practice it's underperforming. May be how it's executed (clickbait vs solution-oriented).
+- **Pain hook is mildly negative for ROAS (0.67× lift, sharpened from 0.74× after resolver fix).** The most counterintuitive finding — the May FINDINGS doc called it core to the winning formula. Pain hooks bring cheap registrations but those leads don't convert to revenue as well as transformation-arc framings.
+- **Dad voice is more negative than thought (0.68× lift, was 0.88×).** With better code resolution, the dad-voice ads now clearly underperform. Suggests the angle itself (not just execution) is weaker than originally hypothesized in `creative_blind_spots`. **Demote Phase B1.3 (dad-voice transformation) from confident-test to scout-test.**
+- **Parent voice is slightly negative (0.77×).** Hugely saturated (in 66% of codes). Possible ad fatigue / sameness depressing ROAS.
+- **Scarcity is catastrophic (0.49× lift, 0.42 ROAS where present).** Used in 64% of codes — biggest single fix.
+- **Screen-addiction copy is broken in execution (0.76×, was 0.66× — slightly less bad with better resolution).** The angle from `creative_blind_spots.md` was supposed to be promising; in practice it underperforms. May be how it's executed (clickbait vs solution-oriented).
+- **Summer lift is real but smaller than first estimate (1.31× vs prior 1.64×).** Still worth leading June with, but adjust the target ROAS for anti-summer-slide test from ≥ 0.9 to ≥ 0.85.
 
 ---
 
@@ -233,7 +235,7 @@ From [creative_blind_spots.md](C:/Users/ducml/.claude/projects/d--work-Kurio-mkt
 
 ## 7. Open questions / risks
 
-- **Code resolution gap.** Only 21% of historic creatives resolve to a code by Meta ad name. The LP-stamped code (Getfly `ads_code`) doesn't always live in the Meta ad/campaign name. **Fix:** convention to name Meta campaigns with the exact LP-stamped code. Otherwise ROAS will keep mis-attributing.
+- **Code resolution gap.** 20% of historic creatives resolve to a code by Meta ad name + campaign-name enrichment, but those resolved creatives cover **84% of 21d window spend** — the analysis is meaningful at the spend layer that matters. Remaining 16% gap is mostly older paused ads with generic names + a few campaigns where the LP-stamped code doesn't appear anywhere in Meta's naming. **Fix:** convention to name Meta campaigns with the exact LP-stamped code, so future resolution → ~100%.
 - **Brand attribution gap.** VTV Engage drives organic but it shows up as "organic page" in cohort drill-down, invisible to ROAS-ranked codes. **Track weekly: organic-page registrations during weeks Engage is on vs off.**
 - **K5 is one cell of 8.** Only `code15_xpage` (K5) is in the plan (and it's the top performer at 1.71 ROAS). If K5 is strategically important, allocate one more test cell to it.
 - **Phase C lock date is Aug 1** — Phase A still needs to launch first. If the unblocking chain (VN tone-edit → designer → LP → comms review) slips, Phase A creative may not land before Phase C inventory is locked, delaying everything by 4 weeks.

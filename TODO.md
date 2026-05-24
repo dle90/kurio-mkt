@@ -17,9 +17,14 @@ A repeatable method to choose the "ad set of the day", decide what to scale, and
   (creative fatigue is the dominant CPR driver — see FINDINGS).
 
 ## 3. Distill creative insights → new creative + testing framework
-Turn existing findings into concrete new creative, and stand up a structured framework for testing it.
-- Inputs: dynamic-image beats video at every spend tier; untested angles include screen-addiction
-  reframe, dad voice, lớp-5 entry-exam, topic-specific weakness, anti-học-thêm (see FINDINGS).
+**Status:** initial pass shipped 2026-05-24.
+- Insights memo: [CREATIVE_REFRESH_2026-05-24.md](CREATIVE_REFRESH_2026-05-24.md)
+- Test registry + verdict tool: [data/creative-tests.json](data/creative-tests.json) +
+  [src/reports/creative_test.js](src/reports/creative_test.js). Run: `npm run report:creative-tests`.
+- Strategy reference (unchanged): [CONTENT_STRATEGY.md](CONTENT_STRATEGY.md), [BRIEFS_PHASE_A.md](BRIEFS_PHASE_A.md).
+- Next: get the blocked inputs unblocked (VN tone-edit, designer, LP confirmation, comms review),
+  ship 1 net-new cell (A2 Lớp 5 → Trần Đại Nghĩa, peak-season window), register it in
+  `data/creative-tests.json`.
 
 ## 4. Explore other channels
 Diversify beyond Meta ads — e.g. SEO.

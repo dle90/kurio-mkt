@@ -1,0 +1,26 @@
+{
+  "_doc": "Registry of in-flight creative tests. Each entry declares the cell, what's being tested, and the success criteria (defaults pulled from CONTENT_STRATEGY.md if omitted). The verdict tool (src/reports/creative_test.js) pulls Meta data for each declared adset and applies kill / scale / winner rules.",
+  "_defaults": {
+    "target_cpr": 250000,
+    "win_cpr": 195000,
+    "kill_cpr": 420000,
+    "min_reg_to_verdict": 10,
+    "min_reg_to_winner": 30,
+    "window_days": 14,
+    "scout_kill_cpr": 450000
+  },
+  "tests": [
+    {
+      "cell_id": "EXAMPLE-A2",
+      "name": "Lớp 5 → Trần Đại Nghĩa, HCM",
+      "hypothesis": "Selective-school entry-exam parents are an unexplored persona; HCM-specific test.",
+      "format": "dynamic-image",
+      "level": "adset",
+      "adset_id": "REPLACE_WITH_REAL_ID",
+      "account": "Kurio 2",
+      "start_date": "2026-05-12",
+      "is_scout": false,
+      "notes": "From BRIEFS_PHASE_A.md cell A2. Paused per ROAS pipeline prioritization; example only."
+    }
+  ]
+}

@@ -28,6 +28,7 @@
     "roas:daily": "node src/reports/daily.js",
     "report:salesperson": "node src/reports/salesperson.js",
     "report:roster": "node src/reports/adset_roster.js",
+    "report:creative-tests": "node src/reports/creative_test.js",
     "roas:analyze:kv": "node src/roas/analyze_kv.js",
     "dashboard:fetch": "node src/dashboard/fetch.js",
     "dashboard": "node src/dashboard/build.js"

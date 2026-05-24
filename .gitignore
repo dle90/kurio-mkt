@@ -14,7 +14,11 @@ creatives-categorized.json
 
 # ROAS pipeline cache + outputs (contain PII + business revenue — never commit)
 .cache/
-out/
+# Ignore everything in out/ except .html dashboards — those are aggregate-only
+# (no phone numbers / customer names) and safe to share. CSVs and per-row JSON
+# stay ignored.
+out/*
+!out/*.html
 
 # SQLite ROAS database — contains lead phone numbers + revenue per phone (PII)
 kurio.db

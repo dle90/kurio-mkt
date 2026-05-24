@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kurio Ads — Cohort Revenue Development</title>
+<style>
+:root{--bg:#f6f6f4;--panel:#fff;--ink:#1a1a1a;--muted:#6e6e6e;--border:#e3e3df;--accent:#1f5fff;
+--scale:#1f6e1f;--kill:#b23a3a;}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1115;--panel:#1a1d23;--ink:#e8e8e8;--muted:#9aa0a8;--border:#2c2f36;}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{padding:26px 36px 16px;border-bottom:1px solid var(--border);background:var(--panel)}
+h1{margin:0;font-size:21px;letter-spacing:-.02em}.sub{color:var(--muted);font-size:13px;margin-top:3px}
+main{padding:22px 36px 80px;max-width:1280px}
+section{margin-bottom:34px}h2{font-size:16px;margin:0 0 4px;letter-spacing:-.01em}
+.h2sub{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.callout{background:color-mix(in srgb,var(--accent) 7%,var(--panel));border-left:3px solid var(--accent);
+padding:11px 15px;border-radius:6px;font-size:13px;margin:12px 0}
+.callout b{font-weight:600}
+table.tri{width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
+table.tri th,table.tri td{padding:3px 5px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+table.tri th{position:sticky;top:0;background:var(--panel);font-weight:600;color:var(--muted)}
+table.tri .lbl{text-align:left}
+table.tri .mono{font-family:"SF Mono",Menlo,monospace;font-size:12px}
+table.tri .tri-x{border-bottom:none}
+table.tri .cum{display:block;font-size:8px;opacity:.55;font-weight:400;margin-top:1px}
+table.tri .tri-earlier td{color:var(--muted);font-style:italic;border-top:1px solid var(--border)}
+table.tri .tri-ad .lbl{color:var(--scale)}
+table.tri .tri-tot td{border-top:2px solid var(--ink);font-weight:600;color:var(--muted)}
+.pos{color:var(--scale);font-weight:600}.neg{color:var(--kill)}
+.batch{color:var(--kill);font-weight:700}.batchrow{opacity:.55}
+footer{padding:24px 36px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+footer code{background:var(--panel);padding:1px 5px;border-radius:3px}
+.roster-counts{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:14px;align-items:center}
+.rtag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff;margin-right:4px}
+.rtag-pick{background:#10b981}.rtag-scale{background:#3b82f6}.rtag-watch{background:#a855f7}.rtag-cut{background:#ef4444}
+.rtag-fatigue{background:#f59e0b}.rtag-hold{background:#9ca3af}
+.code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11px}
+.roster-bucket{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.roster-bucket:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.roster-bucket summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0;list-style:none}
+.roster-bucket summary::-webkit-details-marker{display:none}
+.roster-bucket summary::before{content:"▸";display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+.roster-bucket[open] summary::before{transform:rotate(90deg)}
+table.roster-tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;margin-top:6px}
+table.roster-tbl th,table.roster-tbl td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--border)}
+table.roster-tbl th{background:transparent;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+table.roster-tbl td.num,table.roster-tbl th.num{text-align:right}
+table.roster-tbl tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.lbl-name{max-width:520px;overflow:hidden;text-overflow:ellipsis}
+.muted{color:var(--muted)}
+.num.good{color:var(--scale);font-weight:600}
+.num.warn{color:#b45309}
+.num.bad{color:var(--kill);font-weight:600}
+.acct{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10.5px;font-weight:600}
+.acct.k2{background:#dbeafe;color:#1e40af}
+.acct.k3{background:#dcfce7;color:#166534}
+.acct.k5{background:#fef3c7;color:#92400e}
+@media(prefers-color-scheme:dark){.acct.k2{background:#1e3a8a;color:#bfdbfe}.acct.k3{background:#14532d;color:#bbf7d0}.acct.k5{background:#78350f;color:#fde68a}}
+</style></head><body>
+
+<header>
+  <h1>Kurio Meta Ads — Cohort Revenue Development</h1>
+  <div class="sub">Kurio 2 + Kurio 3 + Kurio 5 · spend window 2026-04-30 → 2026-05-24 · built 2026-05-24 10:15 · roster overlay <code>roster-2026-05-23.json</code></div>
+</header>
+<main>
+
+<section>
+  <h2>Ad-set roster for the week — actions to take</h2>
+  <p class="h2sub">Snapshot from <code>roster-2026-05-23.json</code>. Live ad sets: <b>198</b>. 7d totals: spend <b>121,994,376</b> VND · reg <b>463</b> · blended CPR <b>263,487</b> VND. ROAS overlay: 173/198 (87%) carry code-level ROAS. ROAS values marked "?" are from low-confidence code matches and are not gated.</p>
+  <div class="panel">
+    <div class="roster-counts">
+      <span class="rtag rtag-pick">PICK</span> top 5
+      <span class="rtag rtag-scale">SCALE</span> 14
+      <span class="rtag rtag-watch">WATCH</span> 4
+      <span class="rtag rtag-cut">CUT</span> 10
+      <span class="rtag rtag-fatigue">FATIGUE</span> 5
+      <span class="rtag rtag-hold">HOLD</span> 165
+    </div>
+    <details class="roster-bucket roster-pick" open>
+    <summary><span class="rtag rtag-pick">PICK</span> Ad-sets of the day — top 5 by blended low-CPR × high-ROAS score (≥3 reg) <span class="muted">(5)</span></summary>
+    <table class="roster-tbl"><thead><tr><th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th></tr></thead><tbody><tr>
+    <td class="lbl-name">CVS_TUANTA_17/04_CODE14_xpage <span class="muted">›</span> Code 14</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code14-xpage</td>
+    <td class="num">1,890,981</td>
+    <td class="num">20</td>
+    <td class="num good">94,549</td>
+    <td class="num " title="21d window ROAS for code code14-xpage">0.71</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_01/07_CODE_NM+CX - Bản sao 3 <span class="muted">›</span> CX</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">cx</td>
+    <td class="num">449,883</td>
+    <td class="num">3</td>
+    <td class="num good">149,961</td>
+    <td class="num good" title="21d window ROAS for code cx (low-confidence match)">1.45?</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_21/04_CODE13_reup - Bản sao 2 <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13-reup</td>
+    <td class="num">1,864,470</td>
+    <td class="num">12</td>
+    <td class="num good">155,373</td>
+    <td class="num good" title="21d window ROAS for code code13-reup">1.12</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_21/04_CODE45_Reup - Bản sao <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code45-reup</td>
+    <td class="num">1,903,902</td>
+    <td class="num">11</td>
+    <td class="num good">173,082</td>
+    <td class="num good" title="21d window ROAS for code code45-reup">1.03</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_25/07_CODE85+86_reup <span class="muted">›</span> CODE85</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code85</td>
+    <td class="num">440,545</td>
+    <td class="num">5</td>
+    <td class="num good">88,109</td>
+    <td class="num bad" title="YTD ROAS for code code85 (low-confidence match)">0.00?</td>
+  </tr></tbody></table>
+  </details>
+    <details class="roster-bucket roster-scale" >
+    <summary><span class="rtag rtag-scale">SCALE</span> SCALE — increase budget tomorrow <span class="muted">(14)</span></summary>
+    <table class="roster-tbl"><thead><tr><th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th></tr></thead><tbody><tr>
+    <td class="lbl-name">CVS_TUANTA_01/07_CODE_CX <span class="muted">›</span> CX</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">cx</td>
+    <td class="num">5,735,937</td>
+    <td class="num">24</td>
+    <td class="num good">238,997</td>
+    <td class="num good" title="21d window ROAS for code cx (low-confidence match)">1.45?</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_CODE13_xpage_kv - Bản sao <span class="muted">›</span> code13</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code13-xpage</td>
+    <td class="num">1,918,975</td>
+    <td class="num">15</td>
+    <td class="num good">127,932</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao 2 <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,905,442</td>
+    <td class="num">9</td>
+    <td class="num good">211,716</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_21/04_CODE45_Reup - Bản sao <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code45-reup</td>
+    <td class="num">1,903,902</td>
+    <td class="num">11</td>
+    <td class="num good">173,082</td>
+    <td class="num good" title="21d window ROAS for code code45-reup">1.03</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,902,448</td>
+    <td class="num">15</td>
+    <td class="num good">126,830</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_17/04_CODE14_xpage <span class="muted">›</span> Code 14</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code14-xpage</td>
+    <td class="num">1,890,981</td>
+    <td class="num">20</td>
+    <td class="num good">94,549</td>
+    <td class="num " title="21d window ROAS for code code14-xpage">0.71</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,889,630</td>
+    <td class="num">14</td>
+    <td class="num good">134,974</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_21/04_CODE45_Reup <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code45-reup</td>
+    <td class="num">1,883,728</td>
+    <td class="num">9</td>
+    <td class="num good">209,303</td>
+    <td class="num good" title="21d window ROAS for code code45-reup">1.03</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_21/04_CODE13_reup - Bản sao <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13-reup</td>
+    <td class="num">1,871,379</td>
+    <td class="num">9</td>
+    <td class="num good">207,931</td>
+    <td class="num good" title="21d window ROAS for code code13-reup">1.12</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_21/04_CODE13_reup - Bản sao 2 <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13-reup</td>
+    <td class="num">1,864,470</td>
+    <td class="num">12</td>
+    <td class="num good">155,373</td>
+    <td class="num good" title="21d window ROAS for code code13-reup">1.12</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_15/06_CODE45+44_Xpage <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code4-5</td>
+    <td class="num">1,851,781</td>
+    <td class="num">8</td>
+    <td class="num good">231,473</td>
+    <td class="num bad" title="21d window ROAS for code code4-5 (low-confidence match)">0.00?</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao 2 <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,844,817</td>
+    <td class="num">15</td>
+    <td class="num good">122,988</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_25/06_CT18+19-xpage - Bản sao <span class="muted">›</span> CT19</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">ct19</td>
+    <td class="num">702,197</td>
+    <td class="num">5</td>
+    <td class="num good">140,439</td>
+    <td class="num bad" title="21d window ROAS for code ct19 (low-confidence match)">0.13?</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_25/07_CODE85+86_reup <span class="muted">›</span> CODE85</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code85</td>
+    <td class="num">440,545</td>
+    <td class="num">5</td>
+    <td class="num good">88,109</td>
+    <td class="num bad" title="YTD ROAS for code code85 (low-confidence match)">0.00?</td>
+  </tr></tbody></table>
+  </details>
+    <details class="roster-bucket roster-watch" open>
+    <summary><span class="rtag rtag-watch">WATCH</span> WATCH — cheap CPR but code ROAS marginal (0.4–0.7) — verify before scaling <span class="muted">(4)</span></summary>
+    <table class="roster-tbl"><thead><tr><th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th><th>Reason</th></tr></thead><tbody><tr>
+    <td class="lbl-name">CVS_TUANTA_25/07_code83-xpage-kv <span class="muted">›</span> CODE83</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">83-xpage-kv</td>
+    <td class="num">5,635,906</td>
+    <td class="num">30</td>
+    <td class="num good">187,864</td>
+    <td class="num warn" title="21d window ROAS for code 83-xpage-kv">0.64</td><td class="muted">CPR 187,864 good but code &quot;83-xpage-kv&quot; ROAS 0.64 (21d window) — verify before scaling</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_CODE45_xpage_kv - Bản sao <span class="muted">›</span> code45</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">45-xpage-kv</td>
+    <td class="num">1,940,948</td>
+    <td class="num">11</td>
+    <td class="num good">176,450</td>
+    <td class="num warn" title="21d window ROAS for code 45-xpage-kv">0.45</td><td class="muted">CPR 176,450 good but code &quot;45-xpage-kv&quot; ROAS 0.45 (21d window) — verify before scaling</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_CODE45_xpage_kv <span class="muted">›</span> code45</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">45-xpage-kv</td>
+    <td class="num">1,926,761</td>
+    <td class="num">13</td>
+    <td class="num good">148,212</td>
+    <td class="num warn" title="21d window ROAS for code 45-xpage-kv">0.45</td><td class="muted">CPR 148,212 good but code &quot;45-xpage-kv&quot; ROAS 0.45 (21d window) — verify before scaling</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_CODE83_xpage_kv <span class="muted">›</span> code83</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">83-xpage-kv</td>
+    <td class="num">1,904,494</td>
+    <td class="num">15</td>
+    <td class="num good">126,966</td>
+    <td class="num warn" title="21d window ROAS for code 83-xpage-kv">0.64</td><td class="muted">CPR 126,966 good but code &quot;83-xpage-kv&quot; ROAS 0.64 (21d window) — verify before scaling</td>
+  </tr></tbody></table>
+  </details>
+    <details class="roster-bucket roster-cut" open>
+    <summary><span class="rtag rtag-cut">CUT</span> CUT — pause / kill <span class="muted">(10)</span></summary>
+    <table class="roster-tbl"><thead><tr><th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th><th>Reason</th></tr></thead><tbody><tr>
+    <td class="lbl-name">CVS_TUANTA_25/07_CODE85_reup <span class="muted">›</span> CODE85</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code85-reup</td>
+    <td class="num">5,725,757</td>
+    <td class="num">8</td>
+    <td class="num bad">715,720</td>
+    <td class="num good" title="21d window ROAS for code code85-reup">0.99</td><td class="muted">CPR 715,720 ≥ 2×target</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_01/07_CX-94 <span class="muted">›</span> 94</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">cx-94</td>
+    <td class="num">5,399,207</td>
+    <td class="num">7</td>
+    <td class="num bad">771,315</td>
+    <td class="num " title="21d window ROAS for code cx-94">0.90</td><td class="muted">CPR 771,315 ≥ 2×target</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_12/05_code9+codeNQ <span class="muted">›</span> code9+codeNQ</td>
+    <td><span class="acct k5">Kurio 5</span></td>
+    <td class="muted code">codenq</td>
+    <td class="num">2,142,614</td>
+    <td class="num">10</td>
+    <td class="num good">214,261</td>
+    <td class="num bad" title="21d window ROAS for code codenq">0.00</td><td class="muted">cheap CPR 214,261 but code &quot;codenq&quot; ROAS 0.00 (21d window) — junk leads</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_01/07_CODE_CX93+94 - Bản sao 2 <span class="muted">›</span> CODE93+94</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code93</td>
+    <td class="num">1,544,074</td>
+    <td class="num">7</td>
+    <td class="num good">220,582</td>
+    <td class="num bad" title="YTD ROAS for code code93">0.11</td><td class="muted">cheap CPR 220,582 but code &quot;code93&quot; ROAS 0.11 (YTD) — junk leads</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_01/07_CODE_93+94_NEW - Bản sao 5 <span class="muted">›</span> 93</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code93</td>
+    <td class="num">1,361,040</td>
+    <td class="num">8</td>
+    <td class="num good">170,130</td>
+    <td class="num bad" title="YTD ROAS for code code93">0.11</td><td class="muted">cheap CPR 170,130 but code &quot;code93&quot; ROAS 0.11 (YTD) — junk leads</td>
+  </tr><tr>
+    <td class="lbl-name">Engage - Post07/05 <span class="muted">›</span> Nhóm quảng cáo Lượt tương tác mới</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">—</td>
+    <td class="num">1,049,077</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num muted">n/a</td><td class="muted">0 reg burning 1,049,077</td>
+  </tr><tr>
+    <td class="lbl-name">Engage - vtv <span class="muted">›</span> Nhóm quảng cáo Lượt tương tác mới</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">vtv</td>
+    <td class="num">1,048,268</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num bad" title="21d window ROAS for code vtv (low-confidence match)">0.00?</td><td class="muted">0 reg burning 1,048,268</td>
+  </tr><tr>
+    <td class="lbl-name">ENGAGE - vtv <span class="muted">›</span> Nhóm quảng cáo Lượt tương tác mới - Bản sao</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">vtv</td>
+    <td class="num">1,042,729</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num bad" title="21d window ROAS for code vtv (low-confidence match)">0.00?</td><td class="muted">0 reg burning 1,042,729</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_16/06_CODE13 - Bản sao 4 <span class="muted">›</span> Code 13</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code13</td>
+    <td class="num">958,781</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num warn" title="21d window ROAS for code code13">0.59</td><td class="muted">0 reg burning 958,781</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_MASS_21/11_RLTH- Bản sao 8 <span class="muted">›</span> RLTH</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">—</td>
+    <td class="num">899,639</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num muted">n/a</td><td class="muted">0 reg burning 899,639</td>
+  </tr></tbody></table>
+  </details>
+    <details class="roster-bucket roster-fatigue" open>
+    <summary><span class="rtag rtag-fatigue">FATIGUE</span> FATIGUE — refresh creative (CPR drift &gt; 1.5×) <span class="muted">(5)</span></summary>
+    <table class="roster-tbl"><thead><tr><th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th><th>Reason</th></tr></thead><tbody><tr>
+    <td class="lbl-name">CVS_TUANTA_CODE17_xpage_kv <span class="muted">›</span> code17</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code17-xpage</td>
+    <td class="num">1,894,044</td>
+    <td class="num">7</td>
+    <td class="num ">270,578</td>
+    <td class="num bad" title="21d window ROAS for code code17-xpage (low-confidence match)">0.11?</td><td class="muted">CPR 170,531 → 270,578 (×1.59)</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_15/06_CODE45+44_Xpage_TG - Bản sao <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code4-5</td>
+    <td class="num">1,863,528</td>
+    <td class="num">4</td>
+    <td class="num warn">465,882</td>
+    <td class="num bad" title="21d window ROAS for code code4-5 (low-confidence match)">0.00?</td><td class="muted">CPR 202,903 → 465,882 (×2.30)</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_14/4_CODE13_Xpage2_TG <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13-xpage</td>
+    <td class="num">1,807,962</td>
+    <td class="num">4</td>
+    <td class="num warn">451,991</td>
+    <td class="num muted">—</td><td class="muted">CPR 217,152 → 451,991 (×2.08)</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_07/07_CODE19 - TG - Bản sao 3 <span class="muted">›</span> CT19</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">ct19</td>
+    <td class="num">1,674,582</td>
+    <td class="num">3</td>
+    <td class="num warn">558,194</td>
+    <td class="num bad" title="21d window ROAS for code ct19 (low-confidence match)">0.13?</td><td class="muted">CPR 350,804 → 558,194 (×1.59)</td>
+  </tr><tr>
+    <td class="lbl-name">CVS_TUANTA_01/07_CODE_NM+CX - Bản sao 3 <span class="muted">›</span> CODENM+CX</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">nm</td>
+    <td class="num">1,563,885</td>
+    <td class="num">4</td>
+    <td class="num warn">390,971</td>
+    <td class="num bad" title="21d window ROAS for code nm (low-confidence match)">0.13?</td><td class="muted">CPR 189,728 → 390,971 (×2.06)</td>
+  </tr></tbody></table>
+  </details>
+  </div>
+</section>
+<section>
+  <h2>Cohort revenue development</h2>
+  <p class="h2sub">One row per registration day. Columns = calendar days; each cell shows revenue <b>booked that day</b> from that cohort (big number, M VND) with <b>cumulative-to-date</b> small grey below. A cell turns <span style="color:var(--scale);font-weight:700">green</span> the day cumulative revenue passes ad spend — ROAS-to-date ≥ 1 (broken even).</p>
+  <div class="panel" style="overflow:auto"><table class="tri"><thead><tr><th class="lbl">Cohort</th><th>Spend</th><th>Reg</th><th>CPR</th><th>5/7</th><th>5/8</th><th>5/9</th><th>5/10</th><th>5/11</th><th>5/12</th><th>5/13</th><th>5/14</th><th>5/15</th><th>5/16</th><th>5/17</th><th>5/18</th><th>5/19</th><th>5/20</th><th>5/21</th><th>5/22</th><th>5/23</th><th>5/24</th><th>LTD</th><th>ROAS</th></tr></thead><tbody><tr><td class="lbl mono">05-07</td><td>28.9M</td><td>61</td><td>473,752</td><td style="background:hsl(38 82% 92.47048976820032%)">4.3<span class="cum">4.3</span></td><td style="background:hsl(38 82% 91.94105739410271%)">0.9<span class="cum">5.2</span></td><td style="background:hsl(38 82% 91.94105739410271%)">·<span class="cum">5.2</span></td><td style="background:hsl(38 82% 91.94105739410271%)">·<span class="cum">5.2</span></td><td style="background:hsl(38 82% 90.47041191049824%)">2.5<span class="cum">7.7</span></td><td style="background:hsl(38 82% 90.47041191049824%)">·<span class="cum">7.7</span></td><td style="background:hsl(38 82% 90.47041191049824%)">·<span class="cum">7.7</span></td><td style="background:hsl(38 82% 90.17628281377735%)">0.5<span class="cum">8.2</span></td><td style="background:hsl(38 82% 88.99976642689379%)">2.0<span class="cum">10.2</span></td><td style="background:hsl(38 82% 88.99976642689379%)">·<span class="cum">10.2</span></td><td style="background:hsl(38 82% 88.99976642689379%)">·<span class="cum">10.2</span></td><td style="background:hsl(38 82% 88.44092114312409%)">0.9<span class="cum">11.2</span></td><td style="background:hsl(38 82% 88.44092114312409%)">·<span class="cum">11.2</span></td><td style="background:hsl(38 82% 88.44092114312409%)">·<span class="cum">11.2</span></td><td style="background:hsl(38 82% 87.08792729820797%)">2.3<span class="cum">13.4</span></td><td style="background:hsl(38 82% 87.08792729820797%)">·<span class="cum">13.4</span></td><td style="background:hsl(38 82% 87.08792729820797%)">·<span class="cum">13.4</span></td><td style="background:hsl(38 82% 87.08792729820797%)">·<span class="cum">13.4</span></td><td><strong>13.4</strong></td><td class="neg">0.47</td></tr><tr><td class="lbl mono">05-08</td><td>28.7M</td><td>75</td><td>383,141</td><td class="tri-x"></td><td style="background:hsl(38 82% 93.22519547992785%)">3.0<span class="cum">3.0</span></td><td style="background:hsl(38 82% 91.98283231587735%)">2.1<span class="cum">5.1</span></td><td style="background:hsl(38 82% 91.98283231587735%)">·<span class="cum">5.1</span></td><td style="background:hsl(38 82% 91.03626990517219%)">1.6<span class="cum">6.7</span></td><td style="background:hsl(38 82% 90.50382854915055%)">0.9<span class="cum">7.6</span></td><td style="background:hsl(38 82% 88.25574282372583%)">3.8<span class="cum">11.4</span></td><td style="background:hsl(38 82% 87.42750071435881%)">1.4<span class="cum">12.8</span></td><td style="background:hsl(38 82% 86.4217781529846%)">1.7<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 86.4217781529846%)">·<span class="cum">14.5</span></td><td style="background:hsl(38 82% 84.79487400958513%)">2.8<span class="cum">17.3</span></td><td style="background:hsl(38 82% 84.79487400958513%)">·<span class="cum">17.3</span></td><td><strong>17.3</strong></td><td class="neg">0.60</td></tr><tr><td class="lbl mono">05-09</td><td>10.7M</td><td>32</td><td>333,295</td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 91.6527400651075%)">2.1<span class="cum">2.1</span></td><td style="background:hsl(38 82% 91.6527400651075%)">·<span class="cum">2.1</span></td><td style="background:hsl(38 82% 91.6527400651075%)">·<span class="cum">2.1</span></td><td style="background:hsl(38 82% 91.6527400651075%)">·<span class="cum">2.1</span></td><td style="background:hsl(38 82% 91.6527400651075%)">·<span class="cum">2.1</span></td><td style="background:hsl(38 82% 87.18972681858413%)">2.8<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td style="background:hsl(38 82% 87.18972681858413%)">·<span class="cum">4.9</span></td><td><strong>4.9</strong></td><td class="neg">0.46</td></tr><tr><td class="lbl mono">05-10</td><td>4.9M</td><td>14</td><td>352,724</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 90.52462710626034%)">1.3<span class="cum">1.3</span></td><td style="background:hsl(38 82% 90.52462710626034%)">·<span class="cum">1.3</span></td><td style="background:hsl(38 82% 81.05749213873413%)">2.8<span class="cum">4.0</span></td><td style="background:hsl(38 82% 81.05749213873413%)">·<span class="cum">4.0</span></td><td style="background:hsl(38 82% 81.05749213873413%)">·<span class="cum">4.0</span></td><td style="background:hsl(132 52% 82.24764324028338%);color:#143314">1.3<span class="cum">5.3</span></td><td style="background:hsl(132 52% 82.24764324028338%);color:#143314">·<span class="cum">5.3</span></td><td><strong>5.3</strong></td><td class="pos">1.08</td></tr><tr><td class="lbl mono">05-11</td><td>16.8M</td><td>28</td><td>600,911</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 93.18133277164648%)">1.8<span class="cum">1.8</span></td><td style="background:hsl(38 82% 90.4533319291162%)">2.7<span class="cum">4.5</span></td><td style="background:hsl(38 82% 88.0284422913115%)">2.4<span class="cum">6.9</span></td><td style="background:hsl(38 82% 86.31081213119984%)">1.7<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td style="background:hsl(38 82% 86.31081213119984%)">·<span class="cum">8.6</span></td><td><strong>8.6</strong></td><td class="neg">0.51</td></tr><tr><td class="lbl mono">05-12</td><td>27.8M</td><td>68</td><td>408,825</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 90.71944062801202%)">7.0<span class="cum">7.0</span></td><td style="background:hsl(38 82% 87.84535076396294%)">4.7<span class="cum">11.7</span></td><td style="background:hsl(38 82% 87.23384228225038%)">1.0<span class="cum">12.7</span></td><td style="background:hsl(38 82% 86.43888125602403%)">1.3<span class="cum">14.0</span></td><td style="background:hsl(38 82% 86.43888125602403%)">·<span class="cum">14.0</span></td><td style="background:hsl(38 82% 85.70507107796895%)">1.2<span class="cum">15.2</span></td><td style="background:hsl(38 82% 85.03241174808512%)">1.1<span class="cum">16.3</span></td><td style="background:hsl(38 82% 84.42090326637256%)">1.0<span class="cum">17.3</span></td><td style="background:hsl(38 82% 84.42090326637256%)">·<span class="cum">17.3</span></td><td style="background:hsl(38 82% 84.42090326637256%)">·<span class="cum">17.3</span></td><td style="background:hsl(38 82% 84.42090326637256%)">·<span class="cum">17.3</span></td><td style="background:hsl(38 82% 84.42090326637256%)">·<span class="cum">17.3</span></td><td style="background:hsl(38 82% 84.42090326637256%)">·<span class="cum">17.3</span></td><td><strong>17.3</strong></td><td class="neg">0.62</td></tr><tr><td class="lbl mono">05-13</td><td>20.2M</td><td>65</td><td>310,441</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 92.47257734024842%)">3.0<span class="cum">3.0</span></td><td style="background:hsl(38 82% 87.41773202074529%)">6.0<span class="cum">9.0</span></td><td style="background:hsl(38 82% 85.48004131493575%)">2.3<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td style="background:hsl(38 82% 85.48004131493575%)">·<span class="cum">11.3</span></td><td><strong>11.3</strong></td><td class="neg">0.56</td></tr><tr><td class="lbl mono">05-14</td><td>18.2M</td><td>54</td><td>337,138</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 93.78607666184045%)">1.3<span class="cum">1.3</span></td><td style="background:hsl(38 82% 90.23768536568177%)">3.8<span class="cum">5.1</span></td><td style="background:hsl(38 82% 90.23768536568177%)">·<span class="cum">5.1</span></td><td style="background:hsl(38 82% 90.23768536568177%)">·<span class="cum">5.1</span></td><td style="background:hsl(38 82% 87.34294509776285%)">3.1<span class="cum">8.2</span></td><td style="background:hsl(38 82% 87.34294509776285%)">·<span class="cum">8.2</span></td><td style="background:hsl(38 82% 87.34294509776285%)">·<span class="cum">8.2</span></td><td style="background:hsl(38 82% 87.34294509776285%)">·<span class="cum">8.2</span></td><td style="background:hsl(38 82% 87.34294509776285%)">·<span class="cum">8.2</span></td><td style="background:hsl(38 82% 87.34294509776285%)">·<span class="cum">8.2</span></td><td style="background:hsl(38 82% 87.34294509776285%)">·<span class="cum">8.2</span></td><td><strong>8.2</strong></td><td class="neg">0.45</td></tr><tr><td class="lbl mono">05-15</td><td>19.3M</td><td>73</td><td>263,951</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 92.1767301532174%)">3.2<span class="cum">3.2</span></td><td style="background:hsl(38 82% 88.03005256575545%)">4.7<span class="cum">7.9</span></td><td style="background:hsl(38 82% 86.5301904596522%)">1.7<span class="cum">9.6</span></td><td style="background:hsl(38 82% 85.38323708439677%)">1.3<span class="cum">10.9</span></td><td style="background:hsl(38 82% 82.03060414134244%)">3.8<span class="cum">14.7</span></td><td style="background:hsl(38 82% 82.03060414134244%)">·<span class="cum">14.7</span></td><td style="background:hsl(38 82% 80.97187794879896%)">1.2<span class="cum">15.9</span></td><td style="background:hsl(38 82% 78.76619838100007%)">2.5<span class="cum">18.4</span></td><td style="background:hsl(132 52% 78.00973197723656%);color:#143314">5.0<span class="cum">23.4</span></td><td style="background:hsl(132 52% 78.00973197723656%);color:#143314">·<span class="cum">23.4</span></td><td><strong>23.4</strong></td><td class="pos">1.21</td></tr><tr><td class="lbl mono">05-16</td><td>11.7M</td><td>26</td><td>451,365</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 93.11682148779964%)">1.3<span class="cum">1.3</span></td><td style="background:hsl(38 82% 90.50934354782993%)">1.8<span class="cum">3.1</span></td><td style="background:hsl(38 82% 88.62616503562957%)">1.3<span class="cum">4.4</span></td><td style="background:hsl(38 82% 88.62616503562957%)">·<span class="cum">4.4</span></td><td style="background:hsl(38 82% 88.62616503562957%)">·<span class="cum">4.4</span></td><td style="background:hsl(38 82% 88.62616503562957%)">·<span class="cum">4.4</span></td><td style="background:hsl(38 82% 88.62616503562957%)">·<span class="cum">4.4</span></td><td style="background:hsl(38 82% 88.62616503562957%)">·<span class="cum">4.4</span></td><td style="background:hsl(38 82% 88.62616503562957%)">·<span class="cum">4.4</span></td><td><strong>4.4</strong></td><td class="neg">0.37</td></tr><tr><td class="lbl mono">05-17</td><td>5.6M</td><td>22</td><td>253,205</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 91.03268065843858%)">1.3<span class="cum">1.3</span></td><td style="background:hsl(38 82% 91.03268065843858%)">·<span class="cum">1.3</span></td><td style="background:hsl(38 82% 91.03268065843858%)">·<span class="cum">1.3</span></td><td style="background:hsl(38 82% 87.98089654954518%)">1.0<span class="cum">2.3</span></td><td style="background:hsl(38 82% 85.08170164609645%)">0.9<span class="cum">3.3</span></td><td style="background:hsl(38 82% 85.08170164609645%)">·<span class="cum">3.3</span></td><td style="background:hsl(38 82% 85.08170164609645%)">·<span class="cum">3.3</span></td><td><strong>3.3</strong></td><td class="neg">0.58</td></tr><tr><td class="lbl mono">05-18</td><td>25.6M</td><td>87</td><td>294,660</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 91.22007613913506%)">5.7<span class="cum">5.7</span></td><td style="background:hsl(38 82% 87.10858000977319%)">6.2<span class="cum">11.9</span></td><td style="background:hsl(38 82% 81.60448035272424%)">8.3<span class="cum">20.2</span></td><td style="background:hsl(38 82% 80.94133581573038%)">1.0<span class="cum">21.2</span></td><td style="background:hsl(38 82% 80.94133581573038%)">·<span class="cum">21.2</span></td><td style="background:hsl(38 82% 80.94133581573038%)">·<span class="cum">21.2</span></td><td style="background:hsl(38 82% 80.94133581573038%)">·<span class="cum">21.2</span></td><td><strong>21.2</strong></td><td class="neg">0.83</td></tr><tr><td class="lbl mono">05-19</td><td>25.3M</td><td>82</td><td>308,048</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 93.25019406218794%)">2.6<span class="cum">2.6</span></td><td style="background:hsl(38 82% 86.25097031093972%)">10.4<span class="cum">13.0</span></td><td style="background:hsl(38 82% 85.61161814135455%)">0.9<span class="cum">13.9</span></td><td style="background:hsl(38 82% 85.61161814135455%)">·<span class="cum">13.9</span></td><td style="background:hsl(38 82% 83.8618122035425%)">2.6<span class="cum">16.6</span></td><td style="background:hsl(38 82% 83.8618122035425%)">·<span class="cum">16.6</span></td><td><strong>16.6</strong></td><td class="neg">0.66</td></tr><tr><td class="lbl mono">05-20</td><td>29.2M</td><td>81</td><td>359,992</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 88.58695541462785%)">11.0<span class="cum">11.0</span></td><td style="background:hsl(38 82% 85.32213271662022%)">5.6<span class="cum">16.6</span></td><td style="background:hsl(38 82% 81.62005697870084%)">6.3<span class="cum">22.9</span></td><td style="background:hsl(38 82% 81.62005697870084%)">·<span class="cum">22.9</span></td><td style="background:hsl(38 82% 81.62005697870084%)">·<span class="cum">22.9</span></td><td><strong>22.9</strong></td><td class="neg">0.79</td></tr><tr><td class="lbl mono">05-21</td><td>27.7M</td><td>93</td><td>298,255</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 92.30331290893295%)">4.4<span class="cum">4.4</span></td><td style="background:hsl(38 82% 87.64539884254441%)">7.6<span class="cum">12.0</span></td><td style="background:hsl(38 82% 87.64539884254441%)">·<span class="cum">12.0</span></td><td style="background:hsl(38 82% 87.64539884254441%)">·<span class="cum">12.0</span></td><td><strong>12.0</strong></td><td class="neg">0.43</td></tr><tr><td class="lbl mono">05-22</td><td>8.3M</td><td>22</td><td>376,178</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 89.65919566278355%)">2.6<span class="cum">2.6</span></td><td style="background:hsl(38 82% 87.19420904560673%)">1.2<span class="cum">3.8</span></td><td style="background:hsl(38 82% 87.19420904560673%)">·<span class="cum">3.8</span></td><td><strong>3.8</strong></td><td class="neg">0.46</td></tr><tr><td class="lbl mono">05-23</td><td>0.4M</td><td>1</td><td>377,442</td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td class="tri-x"></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td style="background:hsl(38 82% 95%)">·<span class="cum"></span></td><td><strong>0.0</strong></td><td class="neg">0.00</td></tr><tr class="tri-earlier tri-ad"><td class="lbl">Earlier ad cohorts · pre-window</td><td></td><td></td><td></td><td>6.5</td><td>9.9</td><td>4.0</td><td>4.0</td><td>2.4</td><td>5.9</td><td>5.7</td><td>10.6</td><td>6.6</td><td>3.7</td><td>1.0</td><td>8.2</td><td>10.0</td><td>4.3</td><td>5.5</td><td>·</td><td>·</td><td>·</td><td><strong>88.3</strong></td><td></td></tr><tr class="tri-earlier tri-ad"><td class="lbl">Ad · code not captured</td><td></td><td></td><td></td><td>2.8</td><td>0.1</td><td>·</td><td>·</td><td>·</td><td>1.7</td><td>2.6</td><td>·</td><td>2.5</td><td>·</td><td>·</td><td>·</td><td>·</td><td>1.3</td><td>·</td><td>·</td><td>·</td><td>·</td><td><strong>11.0</strong></td><td></td></tr><tr class="tri-earlier"><td class="lbl">Renewal · gia hạn</td><td></td><td></td><td></td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>0.3</td><td>1.4</td><td>1.1</td><td>·</td><td>·</td><td>5.2</td><td>0.1</td><td>0.8</td><td>1.8</td><td>·</td><td>·</td><td><strong>10.7</strong></td><td></td></tr><tr class="tri-earlier"><td class="lbl">Organic · page + walk-in</td><td></td><td></td><td></td><td>4.6</td><td>2.2</td><td>4.4</td><td>1.1</td><td>4.0</td><td>2.3</td><td>3.6</td><td>2.7</td><td>3.3</td><td>·</td><td>·</td><td>8.5</td><td>9.3</td><td>4.7</td><td>5.0</td><td>5.1</td><td>1.3</td><td>2.3</td><td><strong>64.4</strong></td><td></td></tr><tr class="tri-earlier"><td class="lbl">IKMC scholarship · học bổng</td><td></td><td></td><td></td><td>1.8</td><td>2.5</td><td>·</td><td>2.0</td><td>·</td><td>1.3</td><td>1.8</td><td>4.3</td><td>10.2</td><td>1.0</td><td>·</td><td>11.1</td><td>2.8</td><td>9.5</td><td>14.5</td><td>14.9</td><td>4.8</td><td>·</td><td><strong>82.2</strong></td><td></td></tr><tr class="tri-earlier"><td class="lbl">IKMC contestant list</td><td></td><td></td><td></td><td>·</td><td>·</td><td>·</td><td>·</td><td>1.1</td><td>·</td><td>·</td><td>0.6</td><td>·</td><td>·</td><td>·</td><td>0.1</td><td>·</td><td>·</td><td>·</td><td>1.0</td><td>·</td><td>·</td><td><strong>2.8</strong></td><td></td></tr><tr class="tri-earlier"><td class="lbl">App · self-serve sign-ups</td><td></td><td></td><td></td><td>2.5</td><td>·</td><td>·</td><td>·</td><td>1.9</td><td>·</td><td>·</td><td>2.5</td><td>·</td><td>·</td><td>2.0</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td><strong>8.9</strong></td><td></td></tr><tr class="tri-earlier"><td class="lbl">Other · untracked</td><td></td><td></td><td></td><td>6.5</td><td>·</td><td>·</td><td>·</td><td>0.9</td><td>1.4</td><td>5.7</td><td>2.0</td><td>·</td><td>3.0</td><td>·</td><td>2.8</td><td>·</td><td>2.6</td><td>2.3</td><td>0.8</td><td>·</td><td>·</td><td><strong>27.9</strong></td><td></td></tr><tr class="tri-tot"><td class="lbl">TOTAL daily rev →</td><td></td><td></td><td></td><td>28.9</td><td>18.6</td><td>12.7</td><td>7.2</td><td>16.2</td><td>23.1</td><td>33.1</td><td>37.6</td><td>38.3</td><td>14.8</td><td>7.7</td><td>46.7</td><td>40.9</td><td>55.0</td><td>44.5</td><td>43.5</td><td>18.9</td><td>2.3</td><td><strong>490.0</strong></td><td></td></tr></tbody></table></div>
+  <div class="callout"><b>Cohort ROAS</b> = LTD revenue ÷ that day's ad spend — the lag-correct return (spend and revenue from the same people). Scan a row left-to-right: how soon it goes green = payback speed; amber = still under water. The reference rows below the cohorts break out every remaining dong by source — earlier ad cohorts, ad with code not captured, renewal, organic page, and other — so each column reconciles to total daily revenue. Green labels are still ad-driven. ⚠ = logging-batch day (created_at piled up). Spend covers Kurio 2 + 3 + 5. The rightmost column (2026-05-24) is a partial day — its spend and revenue are still landing.</div>
+</section>
+
+</main>
+<footer>
+  <p><strong>Method.</strong> Daily ad spend from Meta campaign insights (Kurio 2+3+5, fetched live). Revenue = approved <code>sale_orders.real_amount</code> from <code>.cache/getfly_orders_ytd.json</code>. Cohorts join the customer's Getfly account <code>created_at</code> to their orders; codes / sources from <code>.cache/getfly_accounts.json</code>. Rebuild: <code>node src/dashboard/cohort_chart.js</code>.</p>
+</footer>
+</body></html>

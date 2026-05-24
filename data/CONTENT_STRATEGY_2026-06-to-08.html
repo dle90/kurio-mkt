@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kurio Content Strategy — Jun → Aug 2026</title>
+<style>
+  :root { color-scheme: light dark; --accent: #4f46e5; --good: #15803d; --warn: #b45309; --bad: #b91c1c; }
+  * { box-sizing: border-box; }
+  body { font: 14.5px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; margin: 0; padding: 28px 36px 80px; background: #f6f7f9; color: #1f2937; max-width: 1280px; margin-inline: auto; }
+  @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #e2e8f0; } table, .panel, .summary, .takeaway, .brief { background: #1e293b !important; border-color: #334155 !important; } th { background: #0b1220 !important; color: #94a3b8 !important; } tr:hover { background: #1e3a5f !important; } .muted { color: #94a3b8 !important; } code { background: #0b1220 !important; color: #cbd5e1 !important; } .note { background: #422006 !important; border-color: #b45309 !important; color: #fed7aa !important; } .alert { background: #4c0519 !important; border-color: #b91c1c !important; color: #fecaca !important; } }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.015em; }
+  h2 { font-size: 19px; margin: 36px 0 12px; letter-spacing: -0.005em; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  @media (prefers-color-scheme: dark) { h2 { border-bottom-color: #334155; } }
+  h3 { font-size: 15px; margin: 22px 0 8px; }
+  .meta { color: #6b7280; font-size: 13px; margin-bottom: 22px; }
+  .takeaway-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 12px; margin: 14px 0; }
+  .takeaway { background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid var(--accent); border-radius: 6px; padding: 12px 16px; font-size: 13.5px; }
+  .takeaway .num { display: inline-block; width: 22px; height: 22px; background: var(--accent); color: white; border-radius: 50%; font-weight: 700; text-align: center; line-height: 22px; font-size: 12px; margin-right: 8px; }
+  .takeaway strong { display: block; margin-bottom: 4px; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin: 8px 0 16px; }
+  th, td { padding: 8px 11px; text-align: left; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  th { background: #f3f4f6; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: #4b5563; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:hover { background: #f9fafb; }
+  .muted { color: #9ca3af; font-size: 12.5px; }
+  .num.good { color: var(--good); font-weight: 600; }
+  .num.warn { color: var(--warn); }
+  .num.bad  { color: var(--bad); font-weight: 600; }
+  .acct { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .lp { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .lp-xp { background: #dcfce7; color: #166534; }
+  .lp-reup { background: #d1fae5; color: #047857; }
+  .lp-xpage-kv { background: #dbeafe; color: #1e40af; }
+  .lp-xpage { background: #e0e7ff; color: #3730a3; }
+  .lp-base { background: #fee2e2; color: #991b1b; }
+  @media (prefers-color-scheme: dark) {
+    .lp-xp { background: #14532d; color: #bbf7d0; }
+    .lp-reup { background: #064e3b; color: #a7f3d0; }
+    .lp-xpage-kv { background: #1e3a8a; color: #bfdbfe; }
+    .lp-xpage { background: #312e81; color: #c7d2fe; }
+    .lp-base { background: #7f1d1d; color: #fecaca; }
+  }
+  .role { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; color: white; }
+  .role-control { background: #0891b2; }
+  .role-scale { background: #3b82f6; }
+  .role-test { background: #10b981; }
+  .role-burn { background: #f59e0b; }
+  .role-open { background: #6b7280; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: #f3f4f6; padding: 1px 5px; border-radius: 3px; color: #111827; }
+  .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; margin: 14px 0; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 12px 16px; font-size: 13px; margin: 14px 0; }
+  .alert { background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 6px; padding: 12px 16px; font-size: 13px; margin: 14px 0; }
+  .ulist { padding-left: 0; list-style: none; }
+  .ulist li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .ulist li::before { content: "▸"; position: absolute; left: 0; color: #9ca3af; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .pill-up { background: #dcfce7; color: #166534; }
+  .pill-down { background: #fee2e2; color: #991b1b; }
+  .pill-flat { background: #f3f4f6; color: #4b5563; }
+  .brief { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .brief h3 { margin-top: 0; }
+  .phase-header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 14px 20px; border-radius: 8px; margin: 24px 0 14px; }
+  .phase-header h2 { color: white; margin: 0; border: none; padding: 0; }
+  .phase-header .sub { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 14px; }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; }
+  .stat .value { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  @media (prefers-color-scheme: dark) { .stat { background: #1e293b; border-color: #334155; } }
+</style>
+</head>
+<body>
+
+<h1>Content Strategy — June → August 2026</h1>
+<p class="meta">Built 2026-05-24 · 12-week plan · refreshes <code>CONTENT_STRATEGY.md</code> (May baseline) with current ROAS data · source: <code>data/creative-deep-dive.json</code>, <code>data/code-roas-window.json</code></p>
+
+<h2>TL;DR — five things that change</h2>
+<div class="takeaway-list">
+  <div class="takeaway"><strong><span class="num">1</span>"3K/ngày" is neutral, not winning</strong>In 64% of codes — ROAS is identical with vs without (0.64 vs 0.64). The May claim that "15/15 winners had it" was a CPR observation. Keep as price floor, stop crediting as a lever.</div>
+  <div class="takeaway"><strong><span class="num">2</span>Transformation arc is the strongest lever</strong>"top 5", "9-10 điểm", "đỗ chuyên" — <span class="num good"><strong>1.93× ROAS lift</strong></span> (0.77 vs 0.40). Single biggest copy pattern. Double down.</div>
+  <div class="takeaway"><strong><span class="num">3</span>Summer + EOY angles are seasonal winners</strong>Summer: <strong>1.64× lift</strong>. EOY report card: <strong>1.58× lift</strong>. Both perfectly timed for June. Lead with these, not pain hooks.</div>
+  <div class="takeaway"><strong><span class="num">4</span>Scarcity is poison</strong><span class="num bad"><strong>0.48× lift</strong></span> (0.40 vs 0.84). In 59% of codes. <strong>Remove from all new creative.</strong></div>
+  <div class="takeaway"><strong><span class="num">5</span><code>-xp</code> and <code>-reup</code> LPs beat <code>-xpage-kv</code></strong>21d ROAS by family: xp 1.10, reup 1.02, xpage-kv 0.87, xpage 0.82, <strong>base 0.42</strong>. Memory's "-43% CPR for xpage-kv" was a CPR finding only. Make new LPs as <code>-xp</code> or <code>-reup</code> variants.</div>
+</div>
+
+<h2>1. What's working right now (21d window, 2026-05-04 → 2026-05-24)</h2>
+
+<h3>Top 12 codes by ROAS (window spend ≥ 1M)</h3>
+<table>
+  <thead><tr><th>Code</th><th>LP family</th><th class="num">Spend</th><th class="num">Reg</th><th class="num">ROAS</th><th class="num">Apr+May</th><th>Trajectory</th></tr></thead>
+  <tbody>
+    <tr><td><code>code15_xpage</code></td><td><span class="lp lp-xpage">xpage (K5)</span></td><td class="num">3.1M</td><td class="num">10</td><td class="num good"><strong>1.71</strong></td><td class="num">0.56</td><td><span class="pill pill-up">+1.16 ↑↑</span></td></tr>
+    <tr><td><code>13-xpage-kv</code></td><td><span class="lp lp-xpage-kv">xpage-kv</span></td><td class="num">12.3M</td><td class="num">41</td><td class="num good"><strong>1.45</strong></td><td class="num">1.14</td><td><span class="pill pill-up">+0.32 ↑</span></td></tr>
+    <tr><td><code>cx</code></td><td><span class="lp lp-base">base</span></td><td class="num">5.7M</td><td class="num">25</td><td class="num good"><strong>1.45</strong></td><td class="num">0.97</td><td><span class="pill pill-up">+0.48 ↑</span></td></tr>
+    <tr><td><code>code45-xp</code></td><td><span class="lp lp-xp">xp</span></td><td class="num">13.0M</td><td class="num">52</td><td class="num good">1.38</td><td class="num">1.57</td><td><span class="pill pill-flat">−0.18</span></td></tr>
+    <tr><td><code>ct19-xpage</code></td><td><span class="lp lp-xpage">xpage</span></td><td class="num">5.6M</td><td class="num">14</td><td class="num good">1.31</td><td class="num">2.13</td><td><span class="pill pill-down">−0.82 ↓↓</span></td></tr>
+    <tr><td><code>intro2-xpage</code></td><td><span class="lp lp-xpage">xpage</span></td><td class="num">21.6M</td><td class="num">94</td><td class="num good">1.27</td><td class="num">1.44</td><td><span class="pill pill-flat">−0.17</span></td></tr>
+    <tr><td><code>code128</code></td><td><span class="lp lp-base">base</span></td><td class="num">10.5M</td><td class="num">41</td><td class="num good">1.17</td><td class="num">1.02</td><td><span class="pill pill-up">+0.16</span></td></tr>
+    <tr><td><code>code13-reup</code></td><td><span class="lp lp-reup">reup</span></td><td class="num">13.0M</td><td class="num">48</td><td class="num good">1.12</td><td class="num">0.55</td><td><span class="pill pill-up">+0.57 ↑</span></td></tr>
+    <tr><td><code>ct6</code></td><td><span class="lp lp-base">base</span></td><td class="num">2.4M</td><td class="num">7</td><td class="num good">1.07</td><td class="num">0.54</td><td><span class="pill pill-up">+0.54 ↑</span></td></tr>
+    <tr><td><code>code102-2</code></td><td><span class="lp lp-base">base</span></td><td class="num">7.0M</td><td class="num">29</td><td class="num good">1.06</td><td class="num">0.78</td><td><span class="pill pill-up">+0.28</span></td></tr>
+    <tr><td><code>code45-reup</code></td><td><span class="lp lp-reup">reup</span></td><td class="num">10.0M</td><td class="num">45</td><td class="num good">1.03</td><td class="num">1.19</td><td><span class="pill pill-flat">−0.16</span></td></tr>
+    <tr><td><code>code85-reup</code></td><td><span class="lp lp-reup">reup</span></td><td class="num">14.2M</td><td class="num">26</td><td class="num">0.99</td><td class="num">1.01</td><td><span class="pill pill-flat">flat</span></td></tr>
+  </tbody>
+</table>
+<p class="muted">6 of the top 12 are improving (+0.16 to +1.16); 3 are fading (−0.17 to −0.82). Refresh the fading ones; lean into the improving ones.</p>
+
+<h3>LP family ranking</h3>
+<table>
+  <thead><tr><th>LP family</th><th class="num"># codes</th><th class="num">Window spend</th><th class="num">Blended ROAS</th><th class="num">Blended CPR</th><th>Memory said</th></tr></thead>
+  <tbody>
+    <tr><td><span class="lp lp-xp">xp</span></td><td class="num">3</td><td class="num">18.6M</td><td class="num good"><strong>1.10</strong></td><td class="num">230k</td><td class="muted">not previously highlighted</td></tr>
+    <tr><td><span class="lp lp-reup">reup</span></td><td class="num">7</td><td class="num">40.7M</td><td class="num good"><strong>1.02</strong></td><td class="num">309k</td><td class="muted">not previously highlighted</td></tr>
+    <tr><td><span class="lp lp-xpage-kv">xpage-kv</span></td><td class="num">3</td><td class="num">35.3M</td><td class="num">0.87</td><td class="num">226k</td><td class="muted">"−43% CPR vs alternatives" (CPR-only finding)</td></tr>
+    <tr><td><span class="lp lp-xpage">xpage</span></td><td class="num">13</td><td class="num">63.3M</td><td class="num">0.82</td><td class="num">304k</td><td class="muted">mid-tier</td></tr>
+    <tr><td><span class="lp lp-base">base</span></td><td class="num">143</td><td class="num"><strong>178.6M</strong></td><td class="num bad"><strong>0.42</strong></td><td class="num">212k</td><td class="muted">57% of spend goes here</td></tr>
+  </tbody>
+</table>
+<div class="note"><strong>Implication:</strong> The biggest available win is migrating codes from <code>base</code> to <code>-xp</code> or <code>-reup</code> LP variants. <strong>Migration plan for the top 10 high-spend base codes is the highest-ROI infrastructure work for Q3.</strong></div>
+
+<h3>Format × ROAS</h3>
+<table>
+  <thead><tr><th>Format</th><th class="num">Codes</th><th class="num">Spend</th><th class="num">ROAS</th><th class="num">CPR</th></tr></thead>
+  <tbody>
+    <tr><td><strong>VIDEO</strong></td><td class="num">42</td><td class="num">242M</td><td class="num good">0.70</td><td class="num">246k</td></tr>
+    <tr><td>SHARE</td><td class="num">5</td><td class="num">20M</td><td class="num">0.75</td><td class="num">294k</td></tr>
+    <tr><td>STATUS (boosted post)</td><td class="num">10</td><td class="num">49M</td><td class="num warn">0.47</td><td class="num">220k</td></tr>
+    <tr><td>PHOTO</td><td class="num">2</td><td class="num">26M</td><td class="num bad">0.33</td><td class="num">426k</td></tr>
+  </tbody>
+</table>
+<p class="muted"><strong>Revision:</strong> Memory's "dynamic-image beats video" was CPR-only. At ROAS, <strong>VIDEO is the strongest scalable format</strong>. STATUS produces cheap regs that don't convert (CPR 220k but ROAS 0.47 — junk-leads pattern).</p>
+
+<h2>2. Copy patterns × ROAS — the new winning formula</h2>
+
+<table>
+  <thead><tr><th>Copy feature</th><th class="num">Codes w/</th><th class="num">Codes w/o</th><th class="num">ROAS w/</th><th class="num">ROAS w/o</th><th class="num">Lift</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>transformation arc</strong> ("top 5", "9-10 điểm", "HSG")</td><td class="num">29</td><td class="num">30</td><td class="num">0.77</td><td class="num">0.40</td><td class="num good"><strong>1.93×</strong></td><td>⭐ amplify</td></tr>
+    <tr><td><strong>summer</strong> ("hè", "3 tháng hè")</td><td class="num">6</td><td class="num">53</td><td class="num">0.99</td><td class="num">0.60</td><td class="num good"><strong>1.64×</strong></td><td>⭐ lead Jun–Jul</td></tr>
+    <tr><td><strong>EOY report card</strong> ("tổng kết", "giấy khen")</td><td class="num">8</td><td class="num">51</td><td class="num">0.93</td><td class="num">0.59</td><td class="num good"><strong>1.58×</strong></td><td>⭐ lead late May / Jun</td></tr>
+    <tr><td>anti-học-thêm</td><td class="num">33</td><td class="num">26</td><td class="num">0.72</td><td class="num">0.54</td><td class="num good">1.33×</td><td>keep</td></tr>
+    <tr><td>headline_caps</td><td class="num">31</td><td class="num">28</td><td class="num">0.69</td><td class="num">0.56</td><td class="num">1.22×</td><td>keep</td></tr>
+    <tr><td>AI tutor mention</td><td class="num">37</td><td class="num">22</td><td class="num">0.68</td><td class="num">0.57</td><td class="num">1.18×</td><td>keep (mild)</td></tr>
+    <tr><td>emoji</td><td class="num">26</td><td class="num">33</td><td class="num">0.64</td><td class="num">0.64</td><td class="num">1.01×</td><td>neutral</td></tr>
+    <tr><td><strong>3K/ngày anchor</strong></td><td class="num"><strong>38</strong></td><td class="num">21</td><td class="num">0.64</td><td class="num">0.64</td><td class="num"><strong>1.00×</strong></td><td><strong>was overcredited</strong></td></tr>
+    <tr><td>dad voice</td><td class="num">10</td><td class="num">49</td><td class="num">0.58</td><td class="num">0.65</td><td class="num">0.88×</td><td>execution issue?</td></tr>
+    <tr><td>exam mention</td><td class="num">12</td><td class="num">47</td><td class="num">0.57</td><td class="num">0.66</td><td class="num">0.87×</td><td>neutral / mild neg</td></tr>
+    <tr><td>price-per-month</td><td class="num">32</td><td class="num">27</td><td class="num">0.56</td><td class="num">0.71</td><td class="num">0.80×</td><td>mild neg</td></tr>
+    <tr><td>parent voice</td><td class="num">37</td><td class="num">22</td><td class="num">0.56</td><td class="num">0.74</td><td class="num warn">0.76×</td><td>over-saturated</td></tr>
+    <tr><td>pain hook</td><td class="num">27</td><td class="num">32</td><td class="num">0.53</td><td class="num">0.71</td><td class="num warn">0.74×</td><td><strong>mild negative</strong></td></tr>
+    <tr><td>question hook</td><td class="num">9</td><td class="num">50</td><td class="num">0.49</td><td class="num">0.67</td><td class="num warn">0.73×</td><td>drop</td></tr>
+    <tr><td>teacher voice</td><td class="num">24</td><td class="num">35</td><td class="num">0.48</td><td class="num">0.71</td><td class="num warn">0.68×</td><td>drop</td></tr>
+    <tr><td>screen-addiction</td><td class="num">47</td><td class="num">12</td><td class="num">0.55</td><td class="num">0.84</td><td class="num warn">0.66×</td><td>execution broken</td></tr>
+    <tr><td><strong>scarcity</strong></td><td class="num"><strong>35</strong></td><td class="num">24</td><td class="num">0.40</td><td class="num">0.84</td><td class="num bad"><strong>0.48×</strong></td><td>⛔ <strong>REMOVE</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="alert">
+<strong>Surprises worth calling out:</strong>
+<ul class="ulist" style="margin-top:8px;">
+  <li><strong>Pain hook is mildly negative for ROAS (0.74×).</strong> Most counterintuitive — the May FINDINGS called it core to the winning formula. Pain hooks bring cheap regs but those leads don't convert to revenue as well as transformation-arc framings.</li>
+  <li><strong>Parent voice is slightly negative (0.76×).</strong> Hugely saturated (in 63% of codes). Possible ad fatigue / sameness depressing ROAS.</li>
+  <li><strong>Scarcity is catastrophic (0.48× lift).</strong> Used in 59% of codes — biggest single avoidable mistake.</li>
+  <li><strong>Screen-addiction is broken in execution (0.66×).</strong> The blind-spot angle was supposed to be promising; in practice it underperforms. May be execution-quality issue.</li>
+</ul>
+</div>
+
+<h2>3. Code-level fatigue — refresh discipline</h2>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+<div>
+<h3>Fading codes (need refresh or burn-down)</h3>
+<table>
+  <thead><tr><th>Code</th><th>LP</th><th class="num">Apr+May</th><th class="num">21d</th><th class="num">Δ</th></tr></thead>
+  <tbody>
+    <tr><td><code>code4</code></td><td><span class="lp lp-base">base</span></td><td class="num">1.55</td><td class="num bad">0.00</td><td class="num bad">−1.55</td></tr>
+    <tr><td><code>code186</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.95</td><td class="num bad">0.00</td><td class="num bad">−0.95</td></tr>
+    <tr><td><code>ct19-xpage</code></td><td><span class="lp lp-xpage">xpage</span></td><td class="num">2.13</td><td class="num">1.31</td><td class="num warn">−0.82</td></tr>
+    <tr><td><code>code63</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.72</td><td class="num bad">0.00</td><td class="num bad">−0.72</td></tr>
+    <tr><td><code>3-rlth</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.94</td><td class="num">0.22</td><td class="num bad">−0.71</td></tr>
+    <tr><td><code>cx-93</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.77</td><td class="num">0.14</td><td class="num bad">−0.63</td></tr>
+    <tr><td><code>code14</code> (base)</td><td><span class="lp lp-base">base</span></td><td class="num">0.89</td><td class="num">0.39</td><td class="num warn">−0.50</td></tr>
+    <tr><td><code>nm</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.59</td><td class="num">0.13</td><td class="num warn">−0.45</td></tr>
+  </tbody>
+</table>
+<p class="muted">8 of 10 fading codes are <span class="lp lp-base">base</span> LP. Confirms migration thesis: base LPs are running out of audience.</p>
+</div>
+<div>
+<h3>Improving codes (where to lean)</h3>
+<table>
+  <thead><tr><th>Code</th><th>LP</th><th class="num">Apr+May</th><th class="num">21d</th><th class="num">Δ</th></tr></thead>
+  <tbody>
+    <tr><td><code>code15_xpage</code> (K5)</td><td><span class="lp lp-xpage">xpage</span></td><td class="num">0.56</td><td class="num good">1.71</td><td class="num good">+1.16</td></tr>
+    <tr><td><code>code13-reup</code></td><td><span class="lp lp-reup">reup</span></td><td class="num">0.55</td><td class="num good">1.12</td><td class="num good">+0.57</td></tr>
+    <tr><td><code>ct6</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.54</td><td class="num good">1.07</td><td class="num good">+0.54</td></tr>
+    <tr><td><code>cx</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.97</td><td class="num good">1.45</td><td class="num good">+0.48</td></tr>
+    <tr><td><code>13-xpage-kv</code></td><td><span class="lp lp-xpage-kv">xpage-kv</span></td><td class="num">1.14</td><td class="num good">1.45</td><td class="num good">+0.32</td></tr>
+    <tr><td><code>code45-3</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.66</td><td class="num good">0.95</td><td class="num good">+0.29</td></tr>
+    <tr><td><code>code102-2</code></td><td><span class="lp lp-base">base</span></td><td class="num">0.78</td><td class="num good">1.06</td><td class="num good">+0.28</td></tr>
+  </tbody>
+</table>
+<p class="muted">Improving codes span all LP families — newness matters, not just LP migration. Refresh cadence is the operating-level discipline.</p>
+</div>
+</div>
+
+<h2>4. Untested or under-tested angles</h2>
+<table>
+  <thead><tr><th>Angle</th><th>Tested?</th><th>Read</th></tr></thead>
+  <tbody>
+    <tr><td>Lớp-5 → entry-exam (Trần Đại Nghĩa / Ams)</td><td>NO</td><td>Phase A A2/A3 paused; HCM window narrowing fast</td></tr>
+    <tr><td>Dad voice</td><td>Tested, neutral</td><td>10 codes use it; ROAS 0.58 vs 0.65 — possible execution issue, not angle</td></tr>
+    <tr><td><strong>Topic-specific weakness</strong> ("con sợ phép chia")</td><td>NO</td><td>Zero ads target this. Untouched grain.</td></tr>
+    <tr><td><strong>Anti-summer-slide</strong> (June onwards)</td><td>Under-tested</td><td>"hè" in only 6 codes (10%); lift 1.64× when present. Big runway.</td></tr>
+    <tr><td><strong>EOY report card</strong></td><td>Under-tested</td><td>8 codes (14%); lift 1.58×. Should be lead-of-late-May.</td></tr>
+    <tr><td>Sibling success ("anh đỗ → giờ tới em")</td><td>NO</td><td>Mentioned in CONTENT_STRATEGY.md Phase C lead. Untouched.</td></tr>
+    <tr><td>Lớp 1 transition + dad-voice combo</td><td>NO</td><td>Planned for Phase C; needs early test in August.</td></tr>
+    <tr><td>Western pedigree (Singapore Math / Cambridge)</td><td>Briefly</td><td>n=6 ads, −35% CPR per audit. Worth one clean retest at ROAS.</td></tr>
+  </tbody>
+</table>
+
+<div class="phase-header">
+  <h2>5. The 3-month plan</h2>
+  <p class="sub">Cap at 8 active DR cells per portfolio rule (per Meta learning-phase threshold)</p>
+</div>
+
+<h3>Phase B — June (transition: end-of-year → summer)</h3>
+<p><strong>Theme:</strong> <em>"Năm học kết thúc — Hè không học thêm, vẫn không quên"</em></p>
+<table>
+  <thead><tr><th class="num">#</th><th>Role</th><th>Angle</th><th>Format</th><th>LP</th><th>Hypothesis</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><span class="role role-control">CONTROL</span></td><td><code>intro2-xpage</code> (graduated winner)</td><td>VIDEO</td><td><span class="lp lp-xpage">xpage</span></td><td>Hold; floor; refresh by Jul 1</td></tr>
+    <tr><td class="num">2</td><td><span class="role role-control">CONTROL</span></td><td><code>13-xpage-kv</code> (graduated scale-up)</td><td>VIDEO</td><td><span class="lp lp-xpage-kv">xpage-kv</span></td><td>Hold; floor; refresh by Jul 1</td></tr>
+    <tr><td class="num">3</td><td><span class="role role-scale">SCALE</span></td><td><code>code45-xp</code></td><td>VIDEO</td><td><span class="lp lp-xp">xp</span></td><td>Test +50% budget; xp family wins on ROAS</td></tr>
+    <tr><td class="num">4</td><td><span class="role role-scale">SCALE</span></td><td><code>code13-reup</code> (improving 0.55→1.12)</td><td>VIDEO</td><td><span class="lp lp-reup">reup</span></td><td>Keep; monitor for ceiling</td></tr>
+    <tr><td class="num">5</td><td><span class="role role-test">TEST B1.1</span></td><td><strong>EOY report card × transformation arc</strong></td><td>dynamic-image</td><td>-xp variant</td><td>14d, target ROAS ≥ 0.9 (EOY 1.58× lift)</td></tr>
+    <tr><td class="num">6</td><td><span class="role role-test">TEST B1.2</span></td><td><strong>Anti-summer-slide ("3 tháng quên")</strong></td><td>VIDEO</td><td>-reup variant</td><td>14d, target ROAS ≥ 0.9 (summer 1.64× lift)</td></tr>
+    <tr><td class="num">7</td><td><span class="role role-test">TEST B1.3</span></td><td><strong>Lớp-5 entry-exam</strong> (Phase A A2 unblocked)</td><td>dynamic-image</td><td>-xp variant</td><td>scout, target ROAS ≥ 0.7; window closes early June</td></tr>
+    <tr><td class="num">8</td><td><span class="role role-burn">BURN</span></td><td><code>code85-reup</code> (flat at 0.99)</td><td>VIDEO</td><td><span class="lp lp-reup">reup</span></td><td>Phase out by Jul 15</td></tr>
+  </tbody>
+</table>
+<p class="muted"><strong>Production load:</strong> 3 new cells (rows 5, 6, 7). Write all new copy WITHOUT scarcity language. Lead with transformation arc + EOY/summer hook. Skip pain headlines.</p>
+
+<h3>Phase B sub-batch — July (peak summer)</h3>
+<p><strong>Theme:</strong> <em>"Hè con học khác — kết quả khác"</em></p>
+<p>Promote / drop based on June verdict. Whichever of cells 5/6/7 hits ROAS ≥ 1.0 in 14d → graduate to scale-up tier with 2× budget. Replace failing cells with:</p>
+<table>
+  <thead><tr><th class="num">#</th><th>Role</th><th>Angle</th><th>Format</th><th>LP</th><th>Hypothesis</th></tr></thead>
+  <tbody>
+    <tr><td class="num">9</td><td><span class="role role-test">TEST</span></td><td><strong>Topic-specific weakness</strong> (phân số, hình học)</td><td>dynamic-image</td><td>-xp</td><td>ROAS ≥ 0.8 (untested grain)</td></tr>
+    <tr><td class="num">10</td><td><span class="role role-test">TEST</span></td><td><strong>Dad-voice transformation arc</strong> (full story arc)</td><td>VIDEO</td><td>-reup</td><td>ROAS ≥ 0.7; second attempt at dad voice</td></tr>
+    <tr><td class="num">11</td><td><span class="role role-test">TEST</span></td><td><code>code45-xp</code> variant w/ summer hook</td><td>VIDEO</td><td>-xp</td><td>Refresh of top-ROAS code</td></tr>
+  </tbody>
+</table>
+<div class="note">Watch for code-level fatigue in <code>intro2-xpage</code> and <code>13-xpage-kv</code> controls — refresh creative by mid-July if ROAS dips below 0.9.</div>
+
+<h3>Phase C — August (back-to-school ramp)</h3>
+<p><strong>Theme:</strong> <em>"Vào năm học mới — không cần học thêm"</em></p>
+<p><strong>Lock inventory by Aug 1.</strong> Khai giảng is Sep 5. Spend ramp begins Aug 15.</p>
+<table>
+  <thead><tr><th class="num">#</th><th>Role</th><th>Angle</th><th>Format</th><th>LP</th><th>Hypothesis</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><span class="role role-control">CONTROL</span></td><td>Highest-ROAS code from Jun+Jul</td><td>—</td><td>—</td><td>Floor on volume</td></tr>
+    <tr><td class="num">2</td><td><span class="role role-control">CONTROL</span></td><td>Second-highest</td><td>—</td><td>—</td><td>Floor</td></tr>
+    <tr><td class="num">3</td><td><span class="role role-scale">SCALE</span></td><td>EOY transformation winner promoted</td><td>—</td><td>—</td><td>Carry summer momentum</td></tr>
+    <tr><td class="num">4</td><td><span class="role role-test">TEST</span></td><td><strong>Lớp 1 transition × dad voice</strong> (per CONTENT_STRATEGY Phase C)</td><td>VIDEO</td><td>-reup</td><td>ROAS ≥ 0.9</td></tr>
+    <tr><td class="num">5</td><td><span class="role role-test">TEST</span></td><td><strong>Lớp 5 entry-exam</strong> (Aug retest for IKMC + selective)</td><td>dynamic-image</td><td>-xp</td><td>ROAS ≥ 0.8 (second window)</td></tr>
+    <tr><td class="num">6</td><td><span class="role role-test">TEST</span></td><td><strong>Sibling success</strong> ("anh học → giờ tới em")</td><td>VIDEO</td><td>-xp</td><td>Untested per CONTENT_STRATEGY</td></tr>
+    <tr><td class="num">7</td><td><span class="role role-burn">BURN</span></td><td>Summer winners</td><td>—</td><td>—</td><td>Phase out Aug 25</td></tr>
+    <tr><td class="num">8</td><td><span class="role role-open">OPEN</span></td><td>Reserved for emergent test from July verdict</td><td>—</td><td>—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Operating discipline</h2>
+<div class="panel">
+<ol>
+  <li><strong>Refresh cadence: every 6–8 weeks per code.</strong> Code-level fatigue is real (<code>ct19-xpage</code> peaked 2.13 in April → 1.31 now). No code stays on the active roster past week 8 of its lifetime.</li>
+  <li><strong>Migrate base LP codes to <code>-xp</code> or <code>-reup</code>.</strong> Base family has 143 codes contributing 57% of spend at 0.42 ROAS. Migrate the 10 highest-spend base codes one per month — each migration is a 1.5–2× ROAS opportunity.</li>
+  <li><strong>Drop scarcity language from all new creative.</strong> 0.48× lift. Biggest avoidable mistake.</li>
+  <li><strong>Stop relying on "3K/ngày" as the primary hook.</strong> It's table-stakes pricing, not differentiation. Anchor with transformation outcome.</li>
+  <li><strong>Format default: VIDEO with dynamic-image as A/B partner.</strong> PHOTO is dead at 0.33 ROAS. STATUS (boosted posts) is a cheap-regs trap (CPR 220k, ROAS 0.47).</li>
+  <li><strong>Run the roster every Monday</strong> (<code>npm run report:roster</code>); auto-verdicts via <code>npm run report:creative-tests</code>. Refresh <code>code-roas-window.json</code> weekly (<code>node src/dashboard/cohort_drilldown.js</code>) so the roster sees fresh ROAS.</li>
+</ol>
+</div>
+
+<h2>7. Open questions / risks</h2>
+<div class="alert">
+<ul class="ulist">
+  <li><strong>Code resolution gap.</strong> Only 21% of historic creatives resolve to a code via Meta ad name. The LP-stamped code doesn't always live in the Meta ad/campaign name. <strong>Fix:</strong> convention to name Meta campaigns with the exact LP-stamped code.</li>
+  <li><strong>Brand attribution gap.</strong> VTV Engage drives organic that shows as "organic page" in cohort drill-down, invisible to ROAS-ranked codes. Track weekly: organic-page registrations during weeks Engage is on vs off.</li>
+  <li><strong>K5 is one cell of 8.</strong> Only <code>code15_xpage</code> (K5) is in the plan (and it's the top performer at 1.71 ROAS). If K5 is strategically important, allocate one more test cell.</li>
+  <li><strong>Phase C lock date is Aug 1</strong> — Phase A still needs to launch first. If unblocking chain (VN tone-edit → designer → LP → comms) slips, Phase A may not land before Phase C inventory locks, delaying everything 4 weeks.</li>
+</ul>
+</div>
+
+<h2>8. June lead-cell briefs</h2>
+
+<div class="brief">
+<h3>Cell B1.1 — EOY Report Card × Transformation Arc</h3>
+<p><strong>Hypothesis:</strong> EOY report cards arrive late May / early June (parents' fresh pain). Combine with transformation framing (con tăng 2-3 điểm), avoid scarcity.</p>
+<p><strong>Headlines:</strong></p>
+<ol>
+  <li><code>TỔNG KẾT TOÁN 7 ĐIỂM — HÈ NÀY MẸ QUYẾT ĐỊNH KHÁC</code> (from BRIEFS_PHASE_A.md A4)</li>
+  <li><code>CON MANG GIẤY KHEN VỀ — TOÀN MÔN GIỎI, RIÊNG TOÁN 6 ĐIỂM</code></li>
+  <li><code>TỔNG KẾT NĂM HỌC: TỪ 7 ĐIỂM LÊN 9 ĐIỂM TOÁN — 3 THÁNG HÈ THÔI</code> ← new, adds transformation</li>
+</ol>
+<p><strong>Body framework</strong> (~1,400 chars, VN tone-edit needed): Hook (EOY pain) → Transformation (specific number tăng-điểm) → Method (AI gia sư, 30 min/day) → <strong>NO scarcity language</strong> → Price as floor at end (not as hook).</p>
+<p><strong>Format:</strong> Dynamic-image (3 ratios). Visual: giấy khen with red-circled 7, kid + parent. <strong>LP:</strong> <code>-xp</code> variant (build if doesn't exist).</p>
+<p><strong>Budget:</strong> 2M VND/day × 14d → ~28M VND test envelope. Target ROAS ≥ 0.9.</p>
+</div>
+
+<div class="brief">
+<h3>Cell B1.2 — Anti-Summer-Slide</h3>
+<p><strong>Hypothesis:</strong> "3 tháng quên hết" pain hook + transformation arc + summer hook + AI tutor mention. Avoid teacher voice and scarcity.</p>
+<p><strong>Headlines:</strong></p>
+<ol>
+  <li><code>HÈ 3 THÁNG — KHÔNG HỌC THÊM, CON VẪN TĂNG 2 ĐIỂM TOÁN VÀO NĂM HỌC MỚI</code></li>
+  <li><code>ANH CHỊ HỌC THÊM HÈ — EM HỌC KURIO. KẾT QUẢ KHÁC NHAU.</code></li>
+  <li><code>MÙA HÈ KURIO: CON CHỦ ĐỘNG HỌC, MẸ THẢNH THƠI</code></li>
+</ol>
+<p><strong>Format:</strong> Video (sticks at 0.70 ROAS for VIDEO). <strong>LP:</strong> <code>-reup</code> variant of an existing high-ROAS code.</p>
+<p><strong>Budget:</strong> 2M VND/day × 14d. Target ROAS ≥ 0.9.</p>
+</div>
+
+<div class="brief">
+<h3>Cell B1.3 — Lớp 5 Entry-Exam (Phase A A2 unblocked)</h3>
+<p><strong>Hypothesis:</strong> From existing <code>BRIEFS_PHASE_A.md</code> cell A2. HCM Trần Đại Nghĩa entrance exam window is closing — must launch by Jun 1.</p>
+<p><strong>Status:</strong> Already drafted. Needs:</p>
+<ul class="ulist">
+  <li>VN tone-edit (existing blocker)</li>
+  <li>Designer build of 3 image ratios (~1.5M VND production)</li>
+  <li>LP <code>-xp</code> variant created</li>
+  <li>Comms review on school name mentions</li>
+</ul>
+<p><strong>Budget:</strong> 1.5M VND/day × 14d (scout, lower than A/B). Target ROAS ≥ 0.7.</p>
+</div>
+
+<p class="meta" style="margin-top:40px;">Plan owner: Marketing. Refresh this doc at the end of June with what shipped and what verdicted.</p>
+
+</body>
+</html>

@@ -11,8 +11,21 @@
 //         DAYS=30 node src/dashboard/cohort_chart.js
 import 'dotenv/config';
 import fs from 'node:fs';
+import path from 'node:path';
 import { meta } from '../client.js';
 import { normPhone } from '../roas/attribution.js';
+
+// ---- optional: load latest roster snapshot for the action panel ----
+function loadLatestRoster() {
+  try {
+    const files = fs.readdirSync('data')
+      .filter(f => /^roster-\d{4}-\d{2}-\d{2}\.json$/.test(f))
+      .sort();
+    if (!files.length) return null;
+    const latest = files[files.length - 1];
+    return { file: latest, ...JSON.parse(fs.readFileSync(path.join('data', latest), 'utf8')) };
+  } catch { return null; }
+}
 
 const DAYS = +(process.env.DAYS || 24);
 const CHUNK = +(process.env.CHUNK || 12);
@@ -213,6 +226,47 @@ function cohortTriangle() {
   return `<table class="tri"><thead>${head}</thead><tbody>${body}${refRows}${totRow}</tbody></table>`;
 }
 
+function rosterPanel(r) {
+  if (!r) return '';
+  const escr = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const acctClass = a => a === 'Kurio 2' ? 'k2' : a === 'Kurio 3' ? 'k3' : 'k5';
+  const cprClass = c => c == null ? '' : c <= r.scale_cpr ? 'good' : c >= r.cut_cpr ? 'bad' : c > r.target_cpr ? 'warn' : '';
+  const row = (a, extra) => `<tr>
+    <td class="lbl-name">${escr(a.campaign_name || '')} <span class="muted">›</span> ${escr(a.adset_name || '')}</td>
+    <td><span class="acct ${acctClass(a.account)}">${escr(a.account)}</span></td>
+    <td class="num">${fmt(a.spend_7d)}</td>
+    <td class="num">${a.reg_7d}</td>
+    <td class="num ${cprClass(a.cpr_7d)}">${a.cpr_7d != null ? fmt(a.cpr_7d) : '—'}</td>${extra || ''}
+  </tr>`;
+  const head = withReason => `<thead><tr><th>Campaign / Adset</th><th>Acct</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th>${withReason ? '<th>Reason</th>' : ''}</tr></thead>`;
+  const block = (id, title, list, tag, withReason) => `<details class="roster-bucket roster-${tag.toLowerCase()}" ${tag === 'PICK' || tag === 'CUT' || tag === 'FATIGUE' ? 'open' : ''}>
+    <summary><span class="rtag rtag-${tag.toLowerCase()}">${tag}</span> ${escr(title)} <span class="muted">(${list.length})</span></summary>
+    ${list.length ? `<table class="roster-tbl">${head(withReason)}<tbody>${list.map(a => row(a, withReason ? `<td class="muted">${escr(a.note)}</td>` : '')).join('')}</tbody></table>` : '<p class="muted" style="margin:8px 0 0 18px">(none)</p>'}
+  </details>`;
+  const sum = r.summary;
+  return `
+<section>
+  <h2>Ad-set roster for the week — actions to take</h2>
+  <p class="h2sub">Snapshot from <code>${escr(r.file)}</code>. Live ad sets: <b>${sum.live}</b>. 7d totals: spend <b>${fmt(sum.spend_7d)}</b> VND · reg <b>${sum.reg_7d}</b> · blended CPR <b>${sum.reg_7d ? fmt(sum.spend_7d / sum.reg_7d) : '—'}</b> VND.</p>
+  <div class="panel">
+    <div class="roster-counts">
+      <span class="rtag rtag-pick">PICK</span> top 5
+      <span class="rtag rtag-scale">SCALE</span> ${sum.scale}
+      <span class="rtag rtag-cut">CUT</span> ${sum.cut}
+      <span class="rtag rtag-fatigue">FATIGUE</span> ${sum.fatigue}
+      <span class="rtag rtag-hold">HOLD</span> ${sum.hold}
+    </div>
+    ${block('pick', 'Ad-sets of the day — top 5 lowest 7d CPR (≥3 reg)', r.picks, 'PICK', false)}
+    ${block('scale', 'SCALE — increase budget tomorrow', r.scale, 'SCALE', false)}
+    ${block('cut', 'CUT — pause / kill', r.cut, 'CUT', true)}
+    ${block('fatigue', 'FATIGUE — refresh creative (CPR drift > 1.5×)', r.fatigue, 'FATIGUE', true)}
+  </div>
+</section>`;
+}
+
+const ROSTER = loadLatestRoster();
+if (ROSTER) console.error(`Loaded roster overlay: ${ROSTER.file}\n`);
+
 const asOf = new Date().toISOString().slice(0, 16).replace('T', ' ');
 const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/>
@@ -246,14 +300,39 @@ table.tri .tri-tot td{border-top:2px solid var(--ink);font-weight:600;color:var(
 .batch{color:var(--kill);font-weight:700}.batchrow{opacity:.55}
 footer{padding:24px 36px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
 footer code{background:var(--panel);padding:1px 5px;border-radius:3px}
+.roster-counts{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:14px;align-items:center}
+.rtag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff;margin-right:4px}
+.rtag-pick{background:#10b981}.rtag-scale{background:#3b82f6}.rtag-cut{background:#ef4444}
+.rtag-fatigue{background:#f59e0b}.rtag-hold{background:#9ca3af}
+.roster-bucket{margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.roster-bucket:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.roster-bucket summary{cursor:pointer;font-weight:600;font-size:13px;padding:4px 0;list-style:none}
+.roster-bucket summary::-webkit-details-marker{display:none}
+.roster-bucket summary::before{content:"▸";display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+.roster-bucket[open] summary::before{transform:rotate(90deg)}
+table.roster-tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;margin-top:6px}
+table.roster-tbl th,table.roster-tbl td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--border)}
+table.roster-tbl th{background:transparent;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+table.roster-tbl td.num,table.roster-tbl th.num{text-align:right}
+table.roster-tbl tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.lbl-name{max-width:520px;overflow:hidden;text-overflow:ellipsis}
+.muted{color:var(--muted)}
+.num.good{color:var(--scale);font-weight:600}
+.num.warn{color:#b45309}
+.num.bad{color:var(--kill);font-weight:600}
+.acct{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10.5px;font-weight:600}
+.acct.k2{background:#dbeafe;color:#1e40af}
+.acct.k3{background:#dcfce7;color:#166534}
+.acct.k5{background:#fef3c7;color:#92400e}
+@media(prefers-color-scheme:dark){.acct.k2{background:#1e3a8a;color:#bfdbfe}.acct.k3{background:#14532d;color:#bbf7d0}.acct.k5{background:#78350f;color:#fde68a}}
 </style></head><body>
 
 <header>
   <h1>Kurio Meta Ads — Cohort Revenue Development</h1>
-  <div class="sub">Kurio 2 + Kurio 3 + Kurio 5 · spend window ${since} → ${until} · built ${asOf}</div>
+  <div class="sub">Kurio 2 + Kurio 3 + Kurio 5 · spend window ${since} → ${until} · built ${asOf}${ROSTER ? ` · roster overlay <code>${ROSTER.file}</code>` : ''}</div>
 </header>
 <main>
-
+${rosterPanel(ROSTER)}
 <section>
   <h2>Cohort revenue development</h2>
   <p class="h2sub">One row per registration day. Columns = calendar days; each cell shows revenue <b>booked that day</b> from that cohort (big number, M VND) with <b>cumulative-to-date</b> small grey below. A cell turns <span style="color:var(--scale);font-weight:700">green</span> the day cumulative revenue passes ad spend — ROAS-to-date ≥ 1 (broken even).</p>

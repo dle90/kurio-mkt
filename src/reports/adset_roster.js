@@ -186,10 +186,22 @@ const main = async () => {
     TARGET_CPR, SCALE_CPR, CUT_CPR };
   const OUT_MD = process.env.ROSTER_OUT || `data/roster-${YDAY}.md`;
   const OUT_HTML = process.env.ROSTER_OUT_HTML || `data/roster-${YDAY}.html`;
+  const OUT_JSON = process.env.ROSTER_OUT_JSON || `data/roster-${YDAY}.json`;
   fs.mkdirSync(path.dirname(OUT_MD), { recursive: true });
   fs.writeFileSync(OUT_MD, renderMarkdown(ctx));
   fs.writeFileSync(OUT_HTML, renderHtml(ctx));
-  console.error(`\nDone. Snapshots written to:\n  ${OUT_MD}\n  ${OUT_HTML}`);
+  fs.writeFileSync(OUT_JSON, JSON.stringify({
+    yday: YDAY, d7_since: D7_SINCE, d28_since: D28_SINCE,
+    target_cpr: TARGET_CPR, scale_cpr: SCALE_CPR, cut_cpr: CUT_CPR,
+    summary: {
+      live: live.length, scale: byTag('SCALE').length, cut: byTag('CUT').length,
+      fatigue: byTag('FATIGUE').length, hold: byTag('HOLD').length, dead: all.length - live.length,
+      spend_7d: totSpend7d, reg_7d: totReg7d,
+    },
+    picks: pickable.slice(0, 5).map(({ tag, note, ...rest }) => rest),
+    scale: byTag('SCALE'), cut: byTag('CUT'), fatigue: byTag('FATIGUE'),
+  }, null, 2));
+  console.error(`\nDone. Snapshots written to:\n  ${OUT_MD}\n  ${OUT_HTML}\n  ${OUT_JSON}`);
 };
 
 function renderMarkdown({ all, live, byTag, pickable, totSpend7d, totReg7d, YDAY, D7_SINCE, D28_SINCE }) {

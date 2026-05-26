@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kurio Roster Plan — 2026-05-26</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; margin: 0; padding: 26px 34px 80px; background: #f6f7f9; color: #1f2937; max-width: 1280px; margin-inline: auto; }
+  @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #e2e8f0; } table, .panel { background: #1e293b !important; } th { background: #0b1220 !important; color: #94a3b8 !important; } tr:hover { background: #1e3a5f !important; } .summary, .note { background: #1e293b !important; } .muted { color: #94a3b8 !important; } .ulist li::before { color: #94a3b8 !important; } .num.good { color: #4ade80 !important; } .num.bad { color: #f87171 !important; } .num.warn { color: #fbbf24 !important; } code { background: #0b1220 !important; color: #e2e8f0 !important; } }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 30px 0 10px; letter-spacing: -0.005em; }
+  .meta { color: #6b7280; font-size: 13px; margin-bottom: 18px; }
+  .summary { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .stat { display: flex; flex-direction: column; }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; }
+  .stat .value { font-size: 18px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  th, td { padding: 9px 11px; text-align: left; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  th { background: #f3f4f6; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: #4b5563; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.col-rank { text-align: center; width: 28px; font-weight: 700; color: #6b7280; font-size: 12px; }
+  tr:hover { background: #f9fafb; }
+  .muted { color: #9ca3af; font-size: 12.5px; }
+  .num.good { color: #15803d; font-weight: 600; }
+  .num.warn { color: #b45309; }
+  .num.bad  { color: #b91c1c; font-weight: 600; }
+  .acct { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .acct.k2 { background: #dbeafe; color: #1e40af; }
+  .acct.k3 { background: #dcfce7; color: #166534; }
+  .acct.k5 { background: #fef3c7; color: #92400e; }
+  .acct.brand { background: #ede9fe; color: #5b21b6; }
+  .role { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; color: white; white-space: nowrap; }
+  .role-control { background: #0891b2; }
+  .role-scale { background: #3b82f6; }
+  .role-watch { background: #a855f7; }
+  .role-burn { background: #f59e0b; }
+  .role-test { background: #10b981; }
+  .role-brand { background: #ec4899; }
+  .adset-name { font-weight: 500; color: #111827; max-width: 380px; }
+  @media (prefers-color-scheme: dark) { .adset-name { color: #f1f5f9; } }
+  .adset-name .acct + .name { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; background: #f3f4f6; padding: 1px 5px; border-radius: 3px; }
+  .reason { font-size: 12px; color: #4b5563; max-width: 360px; line-height: 1.4; }
+  @media (prefers-color-scheme: dark) { .reason { color: #cbd5e1; } }
+  .open-slot { background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(16, 185, 129, 0.06) 6px, rgba(16, 185, 129, 0.06) 12px); }
+  .tot-row td { font-weight: 700; border-top: 2px solid #1f2937; background: #f9fafb; }
+  @media (prefers-color-scheme: dark) { .tot-row td { background: #0b1220 !important; border-top-color: #e2e8f0; } }
+  .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; margin: 14px 0; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 12px 16px; font-size: 13px; margin: 14px 0; }
+  @media (prefers-color-scheme: dark) { .note { background: #422006 !important; border-color: #b45309 !important; color: #fed7aa; } }
+  .ulist { padding-left: 0; list-style: none; }
+  .ulist li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .ulist li::before { content: "▸"; position: absolute; left: 0; color: #9ca3af; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+  .delta-up   { color: #15803d; font-weight: 600; }
+  .delta-down { color: #b91c1c; font-weight: 600; }
+  .delta-flat { color: #6b7280; }
+</style>
+</head>
+<body>
+
+<h1>Roster plan — 2026-05-26 (today)</h1>
+<p class="meta">9 direct-response ad sets + brand pool · daily target 25M VND · based on <code>data/roster-2026-05-25.json</code> (7d window thru 2026-05-25) + <code>data/code-roas-window.json</code> (21d window thru 2026-05-26)</p>
+
+<div class="summary">
+  <div class="stat"><span class="label">Daily budget</span><span class="value">~25.5M VND</span></div>
+  <div class="stat"><span class="label">DR cells</span><span class="value">9</span></div>
+  <div class="stat"><span class="label">Brand cells</span><span class="value">3 (Engage)</span></div>
+  <div class="stat"><span class="label">DR spend</span><span class="value">25.0M</span></div>
+  <div class="stat"><span class="label">Brand spend</span><span class="value">450k</span></div>
+  <div class="stat"><span class="label">Accounts</span><span class="value">K2 · K3 · K5</span></div>
+</div>
+
+<div class="note">
+  <strong>What moved this week.</strong> Two of last plan's ROAS-justified high-CPR scale-ups <strong>collapsed</strong>:
+  <code>code128</code> ROAS dropped <span class="delta-down">1.17 → 0.57</span> (dropped from plan, now sitting in HOLD)
+  and <code>code15_xpage</code> K5 dropped <span class="delta-down">1.71 → 0.89</span> (kept at smaller budget, watch).
+  Meanwhile <code>ct19-xpage</code> rocketed <span class="delta-up">1.31 → 1.92</span> (now <strong>top of the 21d window</strong>)
+  and <code>code45-xp</code> emerged as a new K2 winner at <span class="delta-up">ROAS 1.13</span>.
+  Lesson: ROAS-driven CPR overrides need close weekly review — they age fast.
+</div>
+
+<h2>The 9 direct-response cells (+ brand pool)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th class="col-rank">#</th>
+      <th>Role</th>
+      <th>Acct</th>
+      <th>Campaign › Adset</th>
+      <th>Code</th>
+      <th class="num">7d CPR</th>
+      <th class="num">ROAS</th>
+      <th class="num">Daily budget</th>
+      <th>Reason</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr>
+      <td class="col-rank">1</td>
+      <td><span class="role role-control">CONTROL</span></td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="adset-name">CVS_TUANTA_17/04_CODE14_xpage <span class="muted">›</span> Code 14</td>
+      <td><code>code14-xpage</code></td>
+      <td class="num good">90,812</td>
+      <td class="num">0.81</td>
+      <td class="num"><strong>4.0M</strong></td>
+      <td class="reason">Lowest CPR in roster (91k). ROAS 0.81 (21d, lifted from 0.71 last week). 20 reg/7d. Cleanest always-on floor — keep big.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">2</td>
+      <td><span class="role role-control">CONTROL</span></td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="adset-name">CVS_TUANTA_01/07_CODE_CX <span class="muted">›</span> CX</td>
+      <td><code>cx</code></td>
+      <td class="num">218,907</td>
+      <td class="num good">1.28</td>
+      <td class="num"><strong>4.0M</strong></td>
+      <td class="reason">Biggest current spender (8.3M/7d, 38 reg). <code>cx</code> at <strong>ROAS 1.28</strong> in 21d window — confirmed volume + economics.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">3</td>
+      <td><span class="role role-scale">SCALE-UP</span></td>
+      <td><span class="acct k3">Kurio 3</span></td>
+      <td class="adset-name">CVS_TUANTA_14/06_INTRO_Xpage2 <span class="muted">(consolidate 3 twins; drop the fatigued Bản sao 2)</span></td>
+      <td><code>intro2-xpage</code></td>
+      <td class="num good">~110,000</td>
+      <td class="num good">1.18</td>
+      <td class="num"><strong>3.5M</strong></td>
+      <td class="reason">3 K3 twins running, combined ~50 reg/7d at CPR ~110k. Code <code>intro2-xpage</code> 21d ROAS <strong>1.18</strong> (was 1.27, slight slip). <strong>One twin (Bản sao 2) flagged FATIGUE at CPR 265k</strong> — drop it; consolidate the other two.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">4</td>
+      <td><span class="role role-scale">SCALE-UP</span></td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="adset-name">CVS_TUANTA_21/04_CODE13_reup <span class="muted">(consolidate Bản sao + Bản sao 2)</span></td>
+      <td><code>code13-reup</code></td>
+      <td class="num good">~156,000</td>
+      <td class="num good">1.42</td>
+      <td class="num"><strong>3.0M</strong></td>
+      <td class="reason">Combined ~23 reg/7d at CPR ~156k. <strong>21d ROAS 1.42 — top confirmed-confidence ROAS in the window.</strong> Consolidate twins.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">5</td>
+      <td><span class="role role-scale">SCALE-UP</span></td>
+      <td><span class="acct k3">Kurio 3</span></td>
+      <td class="adset-name">CVS_TUANTA_CODE13_xpage_kv - Bản sao <span class="muted">›</span> code13</td>
+      <td><code>13-xpage-kv</code></td>
+      <td class="num good">108,180</td>
+      <td class="num good">1.34</td>
+      <td class="num"><strong>3.0M</strong></td>
+      <td class="reason">CPR 108k, 17 reg/7d. Cohort code <code>13-xpage-kv</code> at <strong>21d ROAS 1.34</strong>. Roster's resolver picks the shorter <code>code13-xpage</code> (no ROAS) due to LP-vs-name mismatch — override here.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">6</td>
+      <td><span class="role role-scale">SCALE-UP</span></td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="adset-name">CVS_TUANTA_21/04_CODE45_Reup <span class="muted">(consolidate original + Bản sao)</span></td>
+      <td><code>code45-reup</code></td>
+      <td class="num">~175,000</td>
+      <td class="num good">0.99</td>
+      <td class="num"><strong>2.5M</strong></td>
+      <td class="reason">Combined ~21 reg/7d at CPR ~175k. 21d ROAS 0.99 (was 1.03 — stable around break-even). Consolidate twins.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">7</td>
+      <td><span class="role role-scale">SCALE-UP</span></td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="adset-name">CVS_TUANTA_25/06_CT18+19-xpage <span class="muted">›</span> CT19</td>
+      <td><code>ct19-xpage</code></td>
+      <td class="num good">115,666</td>
+      <td class="num good">1.92</td>
+      <td class="num"><strong>2.0M</strong></td>
+      <td class="reason"><strong>21d ROAS 1.92 — TOP of the window</strong> (jumped from 1.31 last week). CPR 116k, 6 reg/7d — give it room. Roster's resolver picks <code>ct19</code> (token-fallback, ROAS 0.13) — the cohort drill-down's <code>ct19-xpage</code> is the right read.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">8</td>
+      <td><span class="role role-scale">SCALE-UP</span></td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="adset-name">CVS_TUANTA_15/06_CODE45+44_Xpage <span class="muted">›</span> code 45</td>
+      <td><code>code45-xp</code></td>
+      <td class="num">170,138</td>
+      <td class="num good">1.13</td>
+      <td class="num"><strong>2.0M</strong></td>
+      <td class="reason"><strong>NEW K2 winner.</strong> 1.87M spend / 11 reg/7d at CPR 170k. Code <code>code45-xp</code> at <strong>21d ROAS 1.13</strong>. Roster resolver lands on <code>code4-5</code> (low-confidence) — cohort drilldown's <code>code45-xp</code> is the right read.</td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">9</td>
+      <td><span class="role role-watch">WATCH</span></td>
+      <td><span class="acct k5">Kurio 5</span></td>
+      <td class="adset-name">CVS_TUANTA_12/05_code15_xpage - Bản sao <span class="muted">›</span> code15_xpage</td>
+      <td><code>code15-xp-5</code></td>
+      <td class="num warn">313,722</td>
+      <td class="num warn">0.89</td>
+      <td class="num"><strong>1.0M</strong></td>
+      <td class="reason"><strong>Degraded vs last week</strong> (ROAS <span class="delta-down">1.71 → 0.89</span>, CPR <span class="delta-down">~410k → 314k</span>). Still positive and the only viable K5 cell — keep K5 representation but cut budget from 1.5M → 1.0M. If next week ROAS &lt; 0.7, pause.</td>
+    </tr>
+
+    <tr class="tot-row">
+      <td colspan="7" style="text-align:right;">DR subtotal</td>
+      <td class="num">25.0M</td>
+      <td></td>
+    </tr>
+
+    <tr>
+      <td class="col-rank">10</td>
+      <td><span class="role role-brand">BRAND</span></td>
+      <td><span class="acct brand">VTV pool</span></td>
+      <td class="adset-name">Engage - vtv  +  ENGAGE - vtv  +  Engage - Post07/05 <span class="muted">(3 adsets, K2)</span></td>
+      <td class="muted">n/a</td>
+      <td class="num muted">n/a</td>
+      <td class="num muted">n/a</td>
+      <td class="num"><strong>~450k</strong></td>
+      <td class="reason">Same as last week (~150k/day × 3). Driving organic per user direction. Don't judge by CPR or direct ROAS — these are brand/reach. The CUT classifier flags them as "0 reg burning ~1M/7d" each; ignore that for this pool. Track via organic-page registrations.</td>
+    </tr>
+
+    <tr class="tot-row">
+      <td colspan="7" style="text-align:right;">Grand total</td>
+      <td class="num">~25.5M</td>
+      <td></td>
+    </tr>
+
+  </tbody>
+</table>
+
+<h2>Week-over-week deltas</h2>
+
+<div class="panel">
+<table style="font-size:12.5px;">
+  <thead>
+    <tr><th>Code</th><th class="num">21d ROAS last wk</th><th class="num">21d ROAS this wk</th><th class="num">Δ</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>ct19-xpage</code></td><td class="num">1.31</td><td class="num good">1.92</td><td class="num delta-up">+0.61</td><td><strong>Promoted</strong> — give it more budget</td></tr>
+    <tr><td><code>code13-reup</code></td><td class="num">1.12</td><td class="num good">1.42</td><td class="num delta-up">+0.30</td><td>Confirmed top-tier; consolidate twins</td></tr>
+    <tr><td><code>cx</code></td><td class="num good">1.45</td><td class="num good">1.28</td><td class="num delta-down">−0.17</td><td>Still strong; keep at control budget</td></tr>
+    <tr><td><code>intro2-xpage</code></td><td class="num good">1.27</td><td class="num good">1.18</td><td class="num delta-down">−0.09</td><td>Slight slip; one twin fatiguing</td></tr>
+    <tr><td><code>13-xpage-kv</code></td><td class="num good">1.45</td><td class="num good">1.34</td><td class="num delta-down">−0.11</td><td>Holds top tier</td></tr>
+    <tr><td><code>code45-xp</code></td><td class="num muted">— (not surfaced)</td><td class="num good">1.13</td><td class="num delta-up">NEW</td><td><strong>New entry</strong> — first appearance at scale</td></tr>
+    <tr><td><code>code45-reup</code></td><td class="num">1.03</td><td class="num">0.99</td><td class="num delta-flat">−0.04</td><td>Stable around break-even</td></tr>
+    <tr><td><code>code14-xpage</code></td><td class="num">0.71</td><td class="num">0.81</td><td class="num delta-up">+0.10</td><td>Floor improving</td></tr>
+    <tr><td><code>code15-xp-5</code></td><td class="num good">1.71</td><td class="num warn">0.89</td><td class="num delta-down">−0.82</td><td><strong>Degraded</strong> — cut to 1.0M, watch</td></tr>
+    <tr><td><code>code128</code></td><td class="num good">1.17</td><td class="num bad">0.57</td><td class="num delta-down">−0.60</td><td><strong>Collapsed — dropped from plan</strong></td></tr>
+    <tr><td><code>83-xpage-kv</code></td><td class="num warn">0.39 (WATCH)</td><td class="num bad">0.39 (CUT)</td><td class="num delta-flat">flat low</td><td><strong>Escalated to CUT</strong> — junk leads confirmed</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Portfolio shape</h2>
+
+<div class="panel">
+<table style="font-size:12.5px;">
+  <thead>
+    <tr><th>Role</th><th class="num">Cells</th><th class="num">Daily spend</th><th class="num">% of total</th><th>Function</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="role role-control">CONTROL</span></td><td class="num">2</td><td class="num">8.0M</td><td class="num">31%</td><td>Proven floor on volume — code14 + cx</td></tr>
+    <tr><td><span class="role role-scale">SCALE-UP</span></td><td class="num">6</td><td class="num">16.0M</td><td class="num">63%</td><td>Recently-validated winners (5 K2/K3, 1 K3)</td></tr>
+    <tr><td><span class="role role-watch">WATCH</span></td><td class="num">1</td><td class="num">1.0M</td><td class="num">4%</td><td>K5 representation, ROAS slipping — small leash</td></tr>
+    <tr><td><span class="role role-brand">BRAND</span></td><td class="num">3</td><td class="num">~450k</td><td class="num">2%</td><td>VTV Engage — organic lift, separate KPI</td></tr>
+    <tr class="tot-row"><td>Total</td><td>12 adsets / 9 DR slots</td><td class="num">~25.5M</td><td class="num">100%</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Account diversity</h2>
+
+<div class="panel">
+<table style="font-size:12.5px;">
+  <thead><tr><th>Account</th><th class="num">DR cells</th><th class="num">Spend</th></tr></thead>
+  <tbody>
+    <tr><td><span class="acct k2">Kurio 2</span></td><td class="num">6 + 3 brand</td><td class="num">17.5M (+ 450k brand)</td></tr>
+    <tr><td><span class="acct k3">Kurio 3</span></td><td class="num">2</td><td class="num">6.5M</td></tr>
+    <tr><td><span class="acct k5">Kurio 5</span></td><td class="num">1</td><td class="num">1.0M</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Three operational notes</h2>
+<div class="panel">
+<ul class="ulist">
+  <li><strong>Consolidate <code>Bản sao</code> twins</strong> (rows 3, 4, 6). Running identical-creative copies splits Meta's learning data and dilutes optimization. <strong>Row 3 (INTRO_Xpage2 K3) — drop the FATIGUE-flagged Bản sao 2 entirely</strong> (CPR drifted 134k → 265k, ×1.97); consolidate the surviving two.</li>
+  <li><strong>Roster classifier code-resolution mismatches</strong> (rows 5, 7, 8): the smart-resolver picks the shorter base code (<code>code13-xpage</code>, <code>ct19</code>, <code>code4-5</code>) instead of the LP-stamped variant (<code>13-xpage-kv</code>, <code>ct19-xpage</code>, <code>code45-xp</code>) for these. The cohort drilldown's per-code aggregation is the source of truth for ROAS — that's what's quoted here. Worth filing a roster-tool ticket to teach the resolver about <code>kv/-xp</code> tails for these specific codes.</li>
+  <li><strong>This plan is more conservative on K5 than last week</strong> (1.0M vs 1.5M). The K5 sole rep (code15_xpage K5) saw ROAS halved week-over-week. If the cohort drill-down shows another K5 code lifting next week, swap rather than re-up budget.</li>
+</ul>
+</div>
+
+<h2>What to pause</h2>
+<div class="note">
+<strong>Everything else.</strong> Specifically:
+<ul class="ulist" style="margin-top:8px;">
+  <li><strong>Hard CUT</strong> — both <code>code83-xpage-kv</code> adsets (K2 and K3): 10.4M/7d burned across both at ROAS 0.39 — junk leads now confirmed across two consecutive weeks.</li>
+  <li><strong>Hard CUT</strong> — <code>code93+94</code> adsets (CODE_CX93+94 K3, CODE_93+94_NEW K2): ~3.0M/7d at code-ROAS 0.11.</li>
+  <li><strong>Hard CUT</strong> — <code>CVS_TUANTA_12/05_code9+codeNQ</code> K5: 0 reg burning 653k/7d.</li>
+  <li><strong>FATIGUE — refresh creative before re-launching</strong>: CODE17_xpage_kv (CPR ×1.64), CODE13_Xpage2_TG (CPR ×1.90), CODE81+83+84_TG K3 Bản sao 5 (CPR ×1.65), and INTRO_Xpage2 K3 Bản sao 2 (CPR ×1.97).</li>
+  <li><strong>WATCH but don't scale</strong> — <code>code45-xpage_kv</code> (K3, 2 adsets): code-ROAS 0.50. Cheap CPR is hiding weak unit economics; verify the LP variant before adding budget.</li>
+  <li><strong>Drop-from-last-plan</strong> — <code>CODE128</code> K2: ROAS collapsed 1.17 → 0.57 in one week. Was a "ROAS overrides CPR" pick — now neither dimension justifies it.</li>
+  <li><strong>The remaining ~170 HOLD cells</strong> — most are sub-500k/7d at 0–3 reg. Same advice as last week: pause aggressively to free Meta's budget allocator.</li>
+</ul>
+</div>
+
+<h2>Caveats</h2>
+<div class="panel">
+<ul class="ulist">
+  <li><strong>Row 9 (code15-xp-5 K5) is on probation.</strong> ROAS dropped from 1.71 → 0.89 in one week — the steepest decline in the portfolio. Keeping it at a reduced 1.0M for K5 portfolio coverage, but if next week's window ROAS &lt; 0.7, pause without further hesitation.</li>
+  <li><strong>The two ROAS-justified high-CPR scale-ups from last week (CODE128, code15_xpage K5) both decayed sharply.</strong> The pattern is now visible: ROAS overrides on CPR work for ~1–2 weeks before unit economics catch up. Treat this week's row 9 (and arguably rows 7+8 which have ROAS &gt;1 but CPR ~115–170k) as live experiments needing weekly check-ins, not set-and-forget.</li>
+  <li><strong>Brand attribution gap unchanged.</strong> VTV Engage pool drives organic that lands without ads_code → shows as "organic page" in cohort drill-down, not ad-attributed. Track via week-over-week organic-page registrations.</li>
+  <li><strong>Consolidation moves (rows 3, 4, 6) are recommendations</strong> — if Meta's audience-split on twins is meaningfully different (HCM vs HN etc.), keep separate; otherwise fold.</li>
+</ul>
+</div>
+
+<p class="meta" style="margin-top:30px;">Generated 2026-05-26 by Claude. Plan for delivery 2026-05-26 (today).</p>
+
+</body>
+</html>

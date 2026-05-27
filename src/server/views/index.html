@@ -231,7 +231,7 @@ function fmtTime(iso) {
 
 let pollHandle = null;
 let cooldownHandle = null;
-let lastBuiltSig = '';
+let lastCompletedRunId = null;
 
 async function fetchStatus() {
   try {
@@ -343,12 +343,14 @@ async function refreshStatus() {
     // Skip log display for now; log lives in DB and could be served via /runs/:id later.
   }
 
-  // Build a signature of file mtimes so we can detect when a stage produced new output
-  const sig = s.stages.map(x => x.name + ':' + (x.age_ms ?? '∞')).join('|') + '|' + (s.latest_roster || '');
-  if (sig !== lastBuiltSig && lastBuiltSig !== '') {
+  // Only reload iframes when a *new* build completes. Polling that includes
+  // continuously-changing values (like age_ms) was causing the iframes to
+  // reload every poll, which reset their internal scroll to the top.
+  const completedId = s.last_completed_run?.id ?? null;
+  if (lastCompletedRunId !== null && completedId !== null && completedId !== lastCompletedRunId) {
     reloadIframes(true);
   }
-  lastBuiltSig = sig;
+  lastCompletedRunId = completedId;
 
   // Continue polling fast if running, slow if idle
   if (running) {

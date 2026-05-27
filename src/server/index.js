@@ -148,7 +148,16 @@ app.post('/refresh', requireAuth, async (req, res) => {
 });
 
 // ------------ Boot ------------
+async function ensureDataDirs() {
+  // Railway's persistent volume mounts shadow any subdirs created at image
+  // build time, so we have to mkdir them on every boot. Local dev: idempotent.
+  for (const sub of ['.cache', 'data', 'out']) {
+    await fs.mkdir(path.join(refresh.DATA_DIR, sub), { recursive: true });
+  }
+}
+
 async function main() {
+  await ensureDataDirs();
   await db.init();
   app.listen(PORT, () => {
     console.log(`[server] listening on :${PORT}`);

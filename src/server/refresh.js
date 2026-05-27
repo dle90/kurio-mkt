@@ -22,7 +22,18 @@ const MIN = 60_000;
 
 // Staleness thresholds — if the output file is younger than this, skip the stage.
 // Tune these here, not inline. All values in ms.
+//
+// dependsOn: when any listed stage ran in this build, this stage also runs.
+// That's how downstream HTMLs pick up a fresh upstream cache even when their
+// own output file looks fresh by mtime alone.
 export const STAGES = [
+  {
+    name: 'meta_spend_monthly',
+    label: 'Meta spend monthly (campaign→code map)',
+    script: 'src/roas/fetch_meta_spend_monthly.js',
+    outFile: '.cache/meta_spend_monthly.json',
+    maxAgeMs: 24 * HOUR,
+  },
   {
     name: 'getfly_orders',
     label: 'Getfly orders (YTD)',
@@ -43,6 +54,7 @@ export const STAGES = [
     script: 'src/dashboard/cohort_drilldown.js',
     outFile: 'out/cohort_drilldown.html',
     maxAgeMs: 10 * MIN,
+    dependsOn: ['meta_spend_monthly', 'getfly_orders', 'getfly_accounts'],
   },
   {
     name: 'adset_roster',
@@ -51,6 +63,7 @@ export const STAGES = [
     // Roster writes data/roster-{YDAY}.{md,html,json}. YDAY = today - 1 (UTC).
     outFile: () => `data/roster-${yesterday()}.json`,
     maxAgeMs: 10 * MIN,
+    dependsOn: ['cohort_drilldown', 'getfly_accounts'],
   },
   {
     name: 'cohort_chart',
@@ -58,9 +71,7 @@ export const STAGES = [
     script: 'src/dashboard/cohort_chart.js',
     outFile: 'out/cohort.html',
     maxAgeMs: 10 * MIN,
-    // cohort_chart depends on adset_roster being current — if roster ran this
-    // build, force cohort_chart too so the embedded roster table matches.
-    dependsOn: 'adset_roster',
+    dependsOn: ['adset_roster', 'getfly_orders', 'getfly_accounts'],
   },
 ];
 
@@ -155,8 +166,12 @@ export async function planRun({ force = false } = {}) {
       const ageMs = await stageAgeMs(stage);
       if (ageMs >= stage.maxAgeMs) shouldRun = true;
     }
-    // Chained dependency: if upstream ran in this build, downstream must too.
-    if (!shouldRun && stage.dependsOn && ranThisBuild.has(stage.dependsOn)) shouldRun = true;
+    // Chained dependency: if any listed upstream ran in this build, this one
+    // must too — its inputs are fresher than its output's mtime suggests.
+    if (!shouldRun && stage.dependsOn) {
+      const deps = Array.isArray(stage.dependsOn) ? stage.dependsOn : [stage.dependsOn];
+      if (deps.some(d => ranThisBuild.has(d))) shouldRun = true;
+    }
     plan.push({ stage, shouldRun });
     if (shouldRun) ranThisBuild.add(stage.name);
   }

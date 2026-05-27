@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ad-set roster — 2026-05-26</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; margin: 0; padding: 24px 32px; background: #f6f7f9; color: #1f2937; max-width: 1200px; margin-inline: auto; }
+  @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #e2e8f0; } table { background: #1e293b; } th { background: #0b1220 !important; } tr:hover { background: #1e3a5f !important; } .summary { background: #1e293b !important; } .muted { color: #94a3b8 !important; } }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 28px 0 10px; display: flex; align-items: center; gap: 10px; }
+  .meta { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
+  .summary { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .stat { display: flex; flex-direction: column; }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; }
+  .stat .value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  th { background: #f3f4f6; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: #4b5563; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:hover { background: #f9fafb; }
+  .muted { color: #9ca3af; }
+  .num.good { color: #15803d; font-weight: 600; }
+  .num.warn { color: #b45309; }
+  .num.bad  { color: #b91c1c; font-weight: 600; }
+  .acct { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .acct.k2 { background: #dbeafe; color: #1e40af; }
+  .acct.k3 { background: #dcfce7; color: #166534; }
+  .acct.k5 { background: #fef3c7; color: #92400e; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+  .tag-pick    { background: #10b981; color: white; }
+  .tag-scale   { background: #3b82f6; color: white; }
+  .tag-watch   { background: #a855f7; color: white; }
+  .tag-cut     { background: #ef4444; color: white; }
+  .tag-fatigue { background: #f59e0b; color: white; }
+  .tag-hold    { background: #9ca3af; color: white; }
+  .code        { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; }
+  .nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .nav a { padding: 4px 10px; background: #e5e7eb; color: #1f2937; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .nav a:hover { background: #d1d5db; }
+  .rank { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: white; text-align: center; font-weight: 700; font-size: 12px; line-height: 22px; margin-right: 8px; }
+  @media print { body { background: white; } table { box-shadow: none; } .nav { display: none; } }
+</style>
+</head>
+<body>
+<h1>Ad-set roster — 2026-05-26</h1>
+<p class="meta">7d window <strong>2026-05-20 → 2026-05-26</strong> · 28d window <strong>2026-04-29 → 2026-05-26</strong> · target CPR <strong>350,000</strong> VND (scale ≤245,000, cut ≥700,000)</p>
+
+<div class="summary">
+  <div class="stat"><span class="label">Live ad sets</span><span class="value">198</span></div>
+  <div class="stat"><span class="label">SCALE</span><span class="value">18</span></div>
+  <div class="stat"><span class="label">WATCH</span><span class="value">2</span></div>
+  <div class="stat"><span class="label">CUT</span><span class="value">6</span></div>
+  <div class="stat"><span class="label">FATIGUE</span><span class="value">5</span></div>
+  <div class="stat"><span class="label">HOLD</span><span class="value">167</span></div>
+  <div class="stat"><span class="label">Dropped</span><span class="value">27</span></div>
+  <div class="stat"><span class="label">7d spend</span><span class="value">112,894,321</span></div>
+  <div class="stat"><span class="label">7d reg</span><span class="value">469</span></div>
+  <div class="stat"><span class="label">Blended CPR</span><span class="value good">240,713</span></div>
+</div>
+
+<nav class="nav">
+  <a href="#pick">Picks</a>
+  <a href="#scale">SCALE</a>
+  <a href="#watch">WATCH</a>
+  <a href="#cut">CUT</a>
+  <a href="#fatigue">FATIGUE</a>
+  <a href="#hold">HOLD</a>
+</nav>
+
+<section id="pick" class="bucket">
+  <h2><span class="tag tag-pick">PICK</span> Ad-sets of the day — top 5 by blended (low CPR × high ROAS) score, ≥3 reg</h2>
+  <table><thead><tr>
+    <th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th>
+  </tr></thead><tbody>
+    <tr>
+      <td><span class="rank">1</span>CVS_TUANTA_17/04_CODE14_xpage <span class="muted">›</span> Code 14</td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="muted code">code14-xpage</td>
+      <td class="num">1,651,397</td>
+      <td class="num">19</td>
+      <td class="num good">86,916</td>
+      <td class="num " title="21d window ROAS for code code14-xpage">0.84</td>
+    </tr><tr>
+      <td><span class="rank">2</span>CVS_TUANTA_21/04_CODE13_reup - Bản sao 2 <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="muted code">code13-reup</td>
+      <td class="num">1,628,249</td>
+      <td class="num">11</td>
+      <td class="num good">148,023</td>
+      <td class="num good" title="21d window ROAS for code code13-reup">1.62</td>
+    </tr><tr>
+      <td><span class="rank">3</span>CVS_TUANTA_21/04_CODE13_reup - Bản sao <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+      <td><span class="acct k2">Kurio 2</span></td>
+      <td class="muted code">code13-reup</td>
+      <td class="num">1,641,089</td>
+      <td class="num">10</td>
+      <td class="num good">164,109</td>
+      <td class="num good" title="21d window ROAS for code code13-reup">1.62</td>
+    </tr><tr>
+      <td><span class="rank">4</span>CVS_TUANTA_CODE13_xpage_kv - Bản sao <span class="muted">›</span> code13</td>
+      <td><span class="acct k3">Kurio 3</span></td>
+      <td class="muted code">code13_xpage</td>
+      <td class="num">1,638,251</td>
+      <td class="num">17</td>
+      <td class="num good">96,368</td>
+      <td class="num bad" title="21d window ROAS for code code13_xpage">0.39</td>
+    </tr><tr>
+      <td><span class="rank">5</span>CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao <span class="muted">›</span> Advantage+</td>
+      <td><span class="acct k3">Kurio 3</span></td>
+      <td class="muted code">intro</td>
+      <td class="num">1,663,080</td>
+      <td class="num">18</td>
+      <td class="num good">92,393</td>
+      <td class="num muted">—</td>
+    </tr>
+  </tbody></table>
+</section>
+
+
+  <section id="scale" class="bucket bucket-scale">
+    <h2><span class="tag tag-scale">SCALE</span> SCALE — increase budget tomorrow <span class="muted">(18)</span></h2>
+    <table><thead><tr>
+    <th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th>
+  </tr></thead><tbody><tr>
+    <td>CVS_TUANTA_14/4_code13-xpage-kv <span class="muted">›</span> 13-xpage-kv</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13_xpage</td>
+    <td class="num">9,005,248</td>
+    <td class="num">37</td>
+    <td class="num good">243,385</td>
+    <td class="num bad" title="21d window ROAS for code code13_xpage">0.39</td>
+  </tr><tr>
+    <td>CVS_TUANTA_01/07_CODE_CX <span class="muted">›</span> CX</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">cx</td>
+    <td class="num">8,729,754</td>
+    <td class="num">38</td>
+    <td class="num good">229,730</td>
+    <td class="num good" title="21d window ROAS for code cx">1.46</td>
+  </tr><tr>
+    <td>CVS_TUANTA_17/04_CODE14_xpage - Bản sao <span class="muted">›</span> Code 14</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code14-xpage</td>
+    <td class="num">1,676,949</td>
+    <td class="num">8</td>
+    <td class="num good">209,619</td>
+    <td class="num " title="21d window ROAS for code code14-xpage">0.84</td>
+  </tr><tr>
+    <td>CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,663,080</td>
+    <td class="num">18</td>
+    <td class="num good">92,393</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td>CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao 2 <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,658,864</td>
+    <td class="num">7</td>
+    <td class="num good">236,981</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td>CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,653,465</td>
+    <td class="num">16</td>
+    <td class="num good">103,342</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td>CVS_TUANTA_17/04_CODE14_xpage <span class="muted">›</span> Code 14</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code14-xpage</td>
+    <td class="num">1,651,397</td>
+    <td class="num">19</td>
+    <td class="num good">86,916</td>
+    <td class="num " title="21d window ROAS for code code14-xpage">0.84</td>
+  </tr><tr>
+    <td>CVS_TUANTA_CODE17_xpage_kv <span class="muted">›</span> code17</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code17-xpage</td>
+    <td class="num">1,642,851</td>
+    <td class="num">11</td>
+    <td class="num good">149,350</td>
+    <td class="num bad" title="21d window ROAS for code code17-xpage">0.21</td>
+  </tr><tr>
+    <td>CVS_TUANTA_21/04_CODE13_reup - Bản sao <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13-reup</td>
+    <td class="num">1,641,089</td>
+    <td class="num">10</td>
+    <td class="num good">164,109</td>
+    <td class="num good" title="21d window ROAS for code code13-reup">1.62</td>
+  </tr><tr>
+    <td>CVS_TUANTA_CODE13_xpage_kv - Bản sao <span class="muted">›</span> code13</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code13_xpage</td>
+    <td class="num">1,638,251</td>
+    <td class="num">17</td>
+    <td class="num good">96,368</td>
+    <td class="num bad" title="21d window ROAS for code code13_xpage">0.39</td>
+  </tr><tr>
+    <td>CVS_TUANTA_14/06_INTRO_Xpage2 - Bản sao 2 <span class="muted">›</span> Advantage+</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">intro</td>
+    <td class="num">1,629,984</td>
+    <td class="num">15</td>
+    <td class="num good">108,666</td>
+    <td class="num muted">—</td>
+  </tr><tr>
+    <td>CVS_TUANTA_21/04_CODE13_reup - Bản sao 2 <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13-reup</td>
+    <td class="num">1,628,249</td>
+    <td class="num">11</td>
+    <td class="num good">148,023</td>
+    <td class="num good" title="21d window ROAS for code code13-reup">1.62</td>
+  </tr><tr>
+    <td>CVS_TUANTA_15/06_CODE45+44_Xpage <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code4-5</td>
+    <td class="num">1,623,717</td>
+    <td class="num">9</td>
+    <td class="num good">180,413</td>
+    <td class="num bad" title="21d window ROAS for code code4-5">0.15</td>
+  </tr><tr>
+    <td>CVS_TUANTA_21/04_CODE45_Reup - Bản sao <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code45-reup</td>
+    <td class="num">1,620,255</td>
+    <td class="num">8</td>
+    <td class="num good">202,532</td>
+    <td class="num good" title="21d window ROAS for code code45-reup">1.02</td>
+  </tr><tr>
+    <td>CVS_TUANTA_21/04_CODE45_Reup <span class="muted">›</span> code 45</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code45-reup</td>
+    <td class="num">1,618,502</td>
+    <td class="num">7</td>
+    <td class="num good">231,215</td>
+    <td class="num good" title="21d window ROAS for code code45-reup">1.02</td>
+  </tr><tr>
+    <td>CVS_TUANTA_07/07_CODE19 - TG - Bản sao 2 <span class="muted">›</span> CT19</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">ct19</td>
+    <td class="num">1,422,150</td>
+    <td class="num">7</td>
+    <td class="num good">203,164</td>
+    <td class="num bad" title="21d window ROAS for code ct19">0.14</td>
+  </tr><tr>
+    <td>CVS_TUANTA_01/07_CODE_NM+CX - Bản sao 2 <span class="muted">›</span> CODENM+CX</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">nm</td>
+    <td class="num">1,399,701</td>
+    <td class="num">9</td>
+    <td class="num good">155,522</td>
+    <td class="num bad" title="21d window ROAS for code nm">0.32</td>
+  </tr><tr>
+    <td>CVS_TUANTA_25/06_CT18+19-xpage - Bản sao <span class="muted">›</span> CT19</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">ct19</td>
+    <td class="num">651,918</td>
+    <td class="num">5</td>
+    <td class="num good">130,384</td>
+    <td class="num bad" title="21d window ROAS for code ct19">0.14</td>
+  </tr></tbody></table>
+  </section>
+
+  <section id="watch" class="bucket bucket-watch">
+    <h2><span class="tag tag-watch">WATCH</span> WATCH — cheap CPR but code ROAS marginal (0.4–0.7) — verify before scaling <span class="muted">(2)</span></h2>
+    <table><thead><tr>
+    <th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th><th>Reason</th>
+  </tr></thead><tbody><tr>
+    <td>CVS_TUANTA_CODE45_xpage_kv <span class="muted">›</span> code45</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">45-xpage-kv</td>
+    <td class="num">1,732,986</td>
+    <td class="num">8</td>
+    <td class="num good">216,623</td>
+    <td class="num warn" title="21d window ROAS for code 45-xpage-kv">0.52</td><td class="muted">CPR 216,623 good but code &quot;45-xpage-kv&quot; ROAS 0.52 (21d window) — verify before scaling</td>
+  </tr><tr>
+    <td>CVS_TUANTA_CODE45_xpage_kv - Bản sao <span class="muted">›</span> code45</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">45-xpage-kv</td>
+    <td class="num">1,626,091</td>
+    <td class="num">13</td>
+    <td class="num good">125,084</td>
+    <td class="num warn" title="21d window ROAS for code 45-xpage-kv">0.52</td><td class="muted">CPR 125,084 good but code &quot;45-xpage-kv&quot; ROAS 0.52 (21d window) — verify before scaling</td>
+  </tr></tbody></table>
+  </section>
+
+  <section id="cut" class="bucket bucket-cut">
+    <h2><span class="tag tag-cut">CUT</span> CUT — pause / kill <span class="muted">(6)</span></h2>
+    <table><thead><tr>
+    <th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th><th>Reason</th>
+  </tr></thead><tbody><tr>
+    <td>CVS_TUANTA_25/07_code83-xpage-kv <span class="muted">›</span> CODE83</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">83-xpage-kv</td>
+    <td class="num">8,882,706</td>
+    <td class="num">57</td>
+    <td class="num good">155,837</td>
+    <td class="num bad" title="21d window ROAS for code 83-xpage-kv">0.40</td><td class="muted">cheap CPR 155,837 but code &quot;83-xpage-kv&quot; ROAS 0.40 (21d window) — junk leads</td>
+  </tr><tr>
+    <td>CVS_TUANTA_CODE83_xpage_kv <span class="muted">›</span> code83</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">83-xpage-kv</td>
+    <td class="num">1,624,201</td>
+    <td class="num">9</td>
+    <td class="num good">180,467</td>
+    <td class="num bad" title="21d window ROAS for code 83-xpage-kv">0.40</td><td class="muted">cheap CPR 180,467 but code &quot;83-xpage-kv&quot; ROAS 0.40 (21d window) — junk leads</td>
+  </tr><tr>
+    <td>Engage - Post07/05 <span class="muted">›</span> Nhóm quảng cáo Lượt tương tác mới</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">—</td>
+    <td class="num">1,053,158</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num muted">n/a</td><td class="muted">0 reg burning 1,053,158</td>
+  </tr><tr>
+    <td>Engage - vtv <span class="muted">›</span> Nhóm quảng cáo Lượt tương tác mới</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">vtv</td>
+    <td class="num">1,047,591</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num bad" title="Apr+May ROAS for code vtv">0.07</td><td class="muted">0 reg burning 1,047,591</td>
+  </tr><tr>
+    <td>ENGAGE - vtv <span class="muted">›</span> Nhóm quảng cáo Lượt tương tác mới - Bản sao</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">vtv</td>
+    <td class="num">1,028,967</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num bad" title="Apr+May ROAS for code vtv">0.07</td><td class="muted">0 reg burning 1,028,967</td>
+  </tr><tr>
+    <td>CVS_TUANTA_01/07_CODE_NM+CX - Bản sao 3 <span class="muted">›</span> CODENM+CX</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">nm</td>
+    <td class="num">832,716</td>
+    <td class="num">0</td>
+    <td class="num ">—</td>
+    <td class="num bad" title="21d window ROAS for code nm">0.32</td><td class="muted">0 reg burning 832,716</td>
+  </tr></tbody></table>
+  </section>
+
+  <section id="fatigue" class="bucket bucket-fatigue">
+    <h2><span class="tag tag-fatigue">FATIGUE</span> FATIGUE — refresh creative (CPR drift &gt; 1.5×) <span class="muted">(5)</span></h2>
+    <table><thead><tr>
+    <th>Campaign / Adset</th><th>Acct</th><th>Code</th><th class="num">7d spend</th><th class="num">Reg</th><th class="num">7d CPR</th><th class="num">ROAS</th><th>Reason</th>
+  </tr></thead><tbody><tr>
+    <td>CVS_TUANTA_28/08_CODE128 <span class="muted">›</span> CODE128</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code128</td>
+    <td class="num">8,468,544</td>
+    <td class="num">18</td>
+    <td class="num warn">470,475</td>
+    <td class="num warn" title="21d window ROAS for code code128">0.60</td><td class="muted">CPR 263,422 → 470,475 (×1.79)</td>
+  </tr><tr>
+    <td>CVS_TUANTA_14/4_CODE13_Xpage2_TG - Bản sao <span class="muted">›</span> 30-45 - Nữ - Học tập</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code13_xpage</td>
+    <td class="num">1,542,670</td>
+    <td class="num">4</td>
+    <td class="num warn">385,668</td>
+    <td class="num bad" title="21d window ROAS for code code13_xpage">0.39</td><td class="muted">CPR 182,110 → 385,668 (×2.12)</td>
+  </tr><tr>
+    <td>CVS_TUANTA_01/07_CODE_CX93+94 - Bản sao 2 <span class="muted">›</span> CODE93+94</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code93</td>
+    <td class="num">1,453,734</td>
+    <td class="num">5</td>
+    <td class="num ">290,747</td>
+    <td class="num bad" title="YTD ROAS for code code93">0.11</td><td class="muted">CPR 156,227 → 290,747 (×1.86)</td>
+  </tr><tr>
+    <td>CVS_TUANTA_04/08_CODE81+83+84_TG - LT - Bản sao 5 <span class="muted">›</span> CODE83</td>
+    <td><span class="acct k3">Kurio 3</span></td>
+    <td class="muted code">code83</td>
+    <td class="num">1,444,705</td>
+    <td class="num">3</td>
+    <td class="num warn">481,568</td>
+    <td class="num bad" title="21d window ROAS for code code83">0.00</td><td class="muted">CPR 255,990 → 481,568 (×1.88)</td>
+  </tr><tr>
+    <td>CVS_TUANTA_01/07_CODE_93+94_NEW - Bản sao 5 <span class="muted">›</span> 93</td>
+    <td><span class="acct k2">Kurio 2</span></td>
+    <td class="muted code">code93</td>
+    <td class="num">1,344,674</td>
+    <td class="num">3</td>
+    <td class="num warn">448,225</td>
+    <td class="num bad" title="YTD ROAS for code code93">0.11</td><td class="muted">CPR 174,835 → 448,225 (×2.56)</td>
+  </tr></tbody></table>
+  </section>
+
+<section id="hold" class="bucket">
+  <h2><span class="tag tag-hold">HOLD</span> Within target band — leave alone <span class="muted">(167)</span></h2>
+  <p class="muted">Suppressed from this view — see the markdown snapshot or re-run with the full table needed.</p>
+</section>
+
+<p class="meta" style="margin-top: 32px;">Generated by <code>src/reports/adset_roster.js</code>.</p>
+</body>
+</html>

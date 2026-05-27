@@ -125,3 +125,41 @@ Running decisions and guardrails carried forward from prior work. Read [FINDINGS
 - ✅ Monthly blended ROAS YTD 2026 (order-based, Getfly `ads_code`-attributed, re-baselined 2026-05-20): **Jan 0.75, Feb 0.66, Mar 0.77, Apr 0.87, May 0.90** (May still maturing). YTD blended **0.81**. **Trend is up, not down.** Supersedes the old sheet-method figures (Jan 0.62 … May 0.83), which under-attributed throughout. Ad-code attribution rate of total Getfly revenue: Jan 34% → Apr 60% → May 59% (the rest is genuinely organic / renewal / telesales). Apr–May are the most reliable; Jan–Feb (34–35% rate, only 37–44% of accounts carried `ads_code` then) are **lower bounds** — true early-year ad ROAS is probably higher.
 - 🛠 **The whole ROAS pipeline is on Getfly attribution (2026-05-20).** Shared module `src/roas/attribution.js` (`loadAttribution()` → codeSet + phoneToCode + resolveAd) is used by `recompute_codes_ranked.js`, `compute.js` (→ `out/roas_report.html`), `cohort_and_active.js`, and `actionable.js`. `currently_running.js` is a shim → `cohort_and_active.js`. The old sheet/`account.total_revenue`-cohort scripts (`fetch_sheet.js`, `parse_sheet.js`, `fetch_getfly.js`) are de-wired from `npm run roas:build`. Rebuild everything with `npm run roas:build`; daily standup with `npm run roas:daily`.
 - ❓ Open: what is the `_xpage_kv` landing page variant structurally? It dominates winners — worth confirming with team and considering standardization.
+
+---
+
+## Dashboard server (src/server/, Railway-deployable)
+
+Small Express app that serves `out/cohort.html`, `out/cohort_drilldown.html`, and the latest `data/roster-*.html` behind a single "Refresh" button.
+
+**Run locally:**
+```
+DASHBOARD_PASSWORD=<pick-one> npm run server
+# → http://localhost:3000
+```
+DB-less mode: cooldown state lives in-process and resets on restart. Set `DATABASE_URL` for persistence.
+
+**Refresh contract — incremental by design.**
+- Hard 10-min cooldown between successful runs (HTTP 429 otherwise; bypass with `POST /refresh?force=1`).
+- Per-stage staleness skip — a stage only runs if its output file is older than its threshold:
+  - Getfly orders YTD: 1 h
+  - Getfly accounts: 6 h
+  - cohort_drilldown / adset_roster / cohort_chart: 10 min
+- Stage order is fixed (cohort_chart depends on adset_roster's JSON output). Don't parallelize.
+- One in-flight build at a time (HTTP 409 on overlapping POST).
+- Auth: HTTP Basic on `POST /refresh` only — read endpoints are public.
+
+**Tuning the thresholds:** edit `STAGES` and `COOLDOWN_MS` in `src/server/refresh.js`. No env vars for these — keep them in code so the policy is auditable.
+
+**Railway deployment:**
+- `Dockerfile` (Node 20 slim) + `railway.json` are in repo root.
+- Attach a Postgres plugin → `DATABASE_URL` is injected automatically.
+- Attach a Volume mounted at `/data` for `.cache/`, `data/`, `out/` persistence across restarts.
+- Set env vars: `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_API_VERSION`, `GETFLY_HOST`, `GETFLY_API_KEY`, `GETFLY_API_VERSION`, `DASHBOARD_PASSWORD`, `DATA_DIR=/data`, `TZ=Asia/Ho_Chi_Minh`.
+- Healthcheck: `GET /healthz`.
+
+**Code map:**
+- `src/server/index.js` — Express routes, basic-auth middleware, status JSON.
+- `src/server/refresh.js` — stage list, staleness checks, pipeline runner (spawns existing fetch scripts as child processes with `cwd = DATA_DIR`, so the scripts' relative paths still work).
+- `src/server/db.js` — Postgres schema + queries, in-memory fallback when `DATABASE_URL` is unset. Reclaims stale `running` rows on startup.
+- `src/server/views/index.html` — single-page dashboard (status panel + 3 iframe tabs for cohort/drilldown/roster). Polls `/status` every 2 s during a build, 15 s when idle.

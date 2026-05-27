@@ -31,10 +31,14 @@
     "report:creative-tests": "node src/reports/creative_test.js",
     "roas:analyze:kv": "node src/roas/analyze_kv.js",
     "dashboard:fetch": "node src/dashboard/fetch.js",
-    "dashboard": "node src/dashboard/build.js"
+    "dashboard": "node src/dashboard/build.js",
+    "server": "node src/server/index.js",
+    "start": "node src/server/index.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "pg": "^8.13.1"
   },
   "engines": {
     "node": ">=18"

@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kurio Marketing — Dashboard</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    background: #f6f7f9; color: #1f2937;
+    display: flex; flex-direction: column;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #0f172a; color: #e2e8f0; }
+    header { background: #1e293b !important; border-color: #334155 !important; }
+    .stage-row { border-color: #334155 !important; }
+    .stage-row:hover { background: #1e293b !important; }
+    .panel, .stage { background: #1e293b !important; border-color: #334155 !important; }
+    .meta { color: #94a3b8 !important; }
+    .tab-bar { background: #1e293b !important; border-color: #334155 !important; }
+    .tab { color: #cbd5e1 !important; }
+    .tab:hover { background: #334155 !important; }
+    .tab.active { background: #3b82f6 !important; color: white !important; }
+    .log { background: #0b1220 !important; color: #cbd5e1 !important; border-color: #334155 !important; }
+    .iframe-wrap { background: #1e293b; }
+  }
+  header {
+    background: #fff; border-bottom: 1px solid #e5e7eb;
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  h1 { font-size: 16px; margin: 0; letter-spacing: -0.005em; font-weight: 600; }
+  h1 .sub { font-weight: 400; color: #6b7280; font-size: 13px; margin-left: 8px; }
+  .grow { flex: 1; }
+  button {
+    font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid #d1d5db;
+    background: #fff; cursor: pointer; font-weight: 500;
+  }
+  button:hover:not(:disabled) { background: #f3f4f6; }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+  button.primary {
+    background: #3b82f6; color: white; border-color: #2563eb;
+  }
+  button.primary:hover:not(:disabled) { background: #2563eb; }
+  button.primary:disabled { background: #93c5fd; border-color: #93c5fd; color: #fff; }
+  .meta { font-size: 12.5px; color: #6b7280; }
+  .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 9px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .badge.ok      { background: #dcfce7; color: #166534; }
+  .badge.stale   { background: #fef3c7; color: #92400e; }
+  .badge.missing { background: #fee2e2; color: #991b1b; }
+  .badge.running { background: #dbeafe; color: #1e40af; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .tab-bar {
+    display: flex; gap: 4px; padding: 8px 20px;
+    background: #fff; border-bottom: 1px solid #e5e7eb;
+  }
+  .tab {
+    padding: 6px 14px; border-radius: 5px; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: #4b5563;
+    user-select: none;
+  }
+  .tab:hover { background: #f3f4f6; }
+  .tab.active { background: #3b82f6; color: white; }
+  .tab-content { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .iframe-wrap { flex: 1; min-height: 0; background: #fff; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .panel-view { padding: 20px; overflow-y: auto; }
+  .stages { display: grid; gap: 10px; margin: 16px 0; }
+  .stage {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .stage .name { font-weight: 600; flex: 1; }
+  .stage .age { font-variant-numeric: tabular-nums; color: #6b7280; font-size: 12.5px; }
+  .panel {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 14px 18px; margin-bottom: 16px;
+  }
+  .panel h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  .log {
+    background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: 12px 14px;
+    font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    color: #1f2937;
+    max-height: 320px; overflow: auto;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .runs-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .runs-table th, .runs-table td {
+    padding: 6px 10px; border-bottom: 1px solid #e5e7eb;
+    text-align: left; vertical-align: top;
+  }
+  .runs-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: #6b7280; }
+  .stage-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pill {
+    display: inline-block; padding: 1px 7px; border-radius: 9px;
+    font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .pill.ran     { background: #dbeafe; color: #1e40af; }
+  .pill.skipped { background: #f1f5f9; color: #475569; }
+  .pill.error   { background: #fee2e2; color: #991b1b; }
+  .cooldown-bar {
+    height: 3px; background: #e5e7eb; border-radius: 2px; overflow: hidden;
+    width: 140px;
+  }
+  .cooldown-fill { height: 100%; background: #3b82f6; transition: width 0.3s linear; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Kurio Marketing <span class="sub" id="data-dir-label">— dashboard</span></h1>
+  <span class="meta" id="status-text">loading…</span>
+  <span class="grow"></span>
+  <div class="cooldown-bar" id="cooldown-bar" style="display:none">
+    <div class="cooldown-fill" id="cooldown-fill" style="width:0%"></div>
+  </div>
+  <span class="meta" id="cooldown-text"></span>
+  <button class="primary" id="refresh-btn" disabled>Refresh</button>
+</header>
+
+<nav class="tab-bar">
+  <div class="tab active" data-tab="status">Status</div>
+  <div class="tab" data-tab="cohort">Cohort</div>
+  <div class="tab" data-tab="drilldown">Drill-down</div>
+  <div class="tab" data-tab="roster">Roster</div>
+</nav>
+
+<main class="tab-content">
+  <section class="panel-view" id="view-status">
+
+    <div class="panel">
+      <h3>Stages</h3>
+      <div class="meta" style="margin-bottom: 10px;">
+        Each stage skips itself if its output file is fresher than its threshold.
+        The Refresh button runs only stages that are stale or whose dependencies ran.
+      </div>
+      <div class="stages" id="stage-list"></div>
+    </div>
+
+    <div class="panel" id="current-run-panel" style="display:none">
+      <h3>Active build — <span id="current-run-id"></span></h3>
+      <div class="meta" id="current-run-meta"></div>
+      <pre class="log" id="current-run-log">(streaming…)</pre>
+    </div>
+
+    <div class="panel">
+      <h3>Recent runs</h3>
+      <table class="runs-table" id="runs-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Started</th><th>Duration</th><th>Status</th><th>Stages</th><th>Trigger</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="panel" id="last-run-log-panel" style="display:none">
+      <h3>Last run log</h3>
+      <pre class="log" id="last-run-log"></pre>
+    </div>
+
+  </section>
+
+  <section class="iframe-wrap" id="view-cohort" style="display:none">
+    <iframe id="iframe-cohort" src="about:blank" loading="lazy"></iframe>
+  </section>
+
+  <section class="iframe-wrap" id="view-drilldown" style="display:none">
+    <iframe id="iframe-drilldown" src="about:blank" loading="lazy"></iframe>
+  </section>
+
+  <section class="iframe-wrap" id="view-roster" style="display:none">
+    <iframe id="iframe-roster" src="about:blank" loading="lazy"></iframe>
+  </section>
+</main>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+
+const refreshBtn = $('#refresh-btn');
+const statusText = $('#status-text');
+const cooldownBar = $('#cooldown-bar');
+const cooldownFill = $('#cooldown-fill');
+const cooldownText = $('#cooldown-text');
+const stageList = $('#stage-list');
+const dataDirLabel = $('#data-dir-label');
+const runsTbody = $('#runs-table tbody');
+const currentRunPanel = $('#current-run-panel');
+const currentRunId = $('#current-run-id');
+const currentRunMeta = $('#current-run-meta');
+const lastRunLogPanel = $('#last-run-log-panel');
+const lastRunLog = $('#last-run-log');
+
+const iframeCohort = $('#iframe-cohort');
+const iframeDrilldown = $('#iframe-drilldown');
+const iframeRoster = $('#iframe-roster');
+
+const IFRAME_SRCS = {
+  cohort: '/out/cohort.html',
+  drilldown: '/out/cohort_drilldown.html',
+  roster: '/roster/latest.html',
+};
+
+function fmtAge(ms) {
+  if (ms == null) return '—';
+  if (ms < 60_000) return Math.round(ms / 1000) + 's';
+  if (ms < 3_600_000) return (ms / 60_000).toFixed(1) + 'min';
+  if (ms < 86_400_000) return (ms / 3_600_000).toFixed(1) + 'h';
+  return (ms / 86_400_000).toFixed(1) + 'd';
+}
+function fmtDur(ms) {
+  if (ms == null) return '—';
+  if (ms < 1000) return ms + 'ms';
+  if (ms < 60_000) return (ms / 1000).toFixed(1) + 's';
+  return (ms / 60_000).toFixed(1) + 'min';
+}
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('en-GB', { hour12: false });
+}
+
+let pollHandle = null;
+let cooldownHandle = null;
+let lastBuiltSig = '';
+
+async function fetchStatus() {
+  try {
+    const r = await fetch('/status', { cache: 'no-store' });
+    if (!r.ok) throw new Error('status ' + r.status);
+    return await r.json();
+  } catch (e) {
+    statusText.textContent = 'status fetch failed: ' + e.message;
+    return null;
+  }
+}
+
+function renderStages(stages) {
+  stageList.innerHTML = '';
+  for (const s of stages) {
+    const div = document.createElement('div');
+    div.className = 'stage';
+    let badge, status;
+    if (s.age_ms == null) { badge = 'missing'; status = 'never built'; }
+    else if (s.stale)     { badge = 'stale';   status = 'stale (' + fmtAge(s.age_ms) + ')'; }
+    else                  { badge = 'ok';      status = 'fresh ('  + fmtAge(s.age_ms) + ')'; }
+    div.innerHTML = `
+      <span class="badge ${badge}">${status}</span>
+      <span class="name">${escapeHtml(s.label)}</span>
+      <span class="age">threshold ${fmtAge(s.max_age_ms)} · <code style="font-size:11px">${escapeHtml(s.out_file)}</code></span>
+    `;
+    stageList.appendChild(div);
+  }
+}
+
+function renderCooldown(cool) {
+  if (cool.remaining_ms > 0) {
+    cooldownBar.style.display = 'inline-block';
+    const total = 10 * 60 * 1000;
+    cooldownFill.style.width = (100 * (1 - cool.remaining_ms / total)) + '%';
+    cooldownText.textContent = 'next refresh in ' + fmtAge(cool.remaining_ms);
+  } else {
+    cooldownBar.style.display = 'none';
+    cooldownText.textContent = '';
+  }
+}
+
+function renderRuns(runs) {
+  runsTbody.innerHTML = '';
+  for (const r of runs) {
+    const tr = document.createElement('tr');
+    const duration = r.finished_at && r.started_at
+      ? new Date(r.finished_at).getTime() - new Date(r.started_at).getTime()
+      : (r.status === 'running' ? Date.now() - new Date(r.started_at).getTime() : null);
+    const stageBadges = (r.stages_ran || []).map(s =>
+      `<span class="pill ${s.status}">${escapeHtml(s.name)}${s.status === 'ran' ? ' ' + fmtDur(s.duration_ms) : ''}</span>`
+    ).join(' ');
+    tr.innerHTML = `
+      <td>#${r.id}</td>
+      <td>${fmtTime(r.started_at)}</td>
+      <td>${fmtDur(duration)}</td>
+      <td><span class="badge ${r.status === 'success' ? 'ok' : r.status === 'running' ? 'running' : 'missing'}">${r.status}</span></td>
+      <td class="stage-list">${stageBadges || '<span class="meta">—</span>'}</td>
+      <td class="meta">${escapeHtml(r.triggered_by || '')}</td>
+    `;
+    runsTbody.appendChild(tr);
+  }
+}
+
+function reloadIframes(stagesChanged) {
+  // Bust the iframe cache when we know files just changed
+  if (!stagesChanged) return;
+  const t = '?_=' + Date.now();
+  if (iframeCohort.src && iframeCohort.src !== 'about:blank') iframeCohort.src = IFRAME_SRCS.cohort + t;
+  if (iframeDrilldown.src && iframeDrilldown.src !== 'about:blank') iframeDrilldown.src = IFRAME_SRCS.drilldown + t;
+  if (iframeRoster.src && iframeRoster.src !== 'about:blank') iframeRoster.src = IFRAME_SRCS.roster + t;
+}
+
+async function refreshStatus() {
+  const s = await fetchStatus();
+  if (!s) return;
+
+  dataDirLabel.textContent = '— ' + s.data_dir + (s.db_enabled ? '' : ' (in-memory)');
+
+  const running = !!s.current_run;
+  refreshBtn.disabled = running || (s.cooldown.remaining_ms > 0);
+  refreshBtn.textContent = running ? 'Refreshing…' : 'Refresh';
+
+  if (running) {
+    statusText.innerHTML = `<span class="badge running">building #${s.current_run.id}</span>`;
+  } else if (s.last_completed_run) {
+    const cls = s.last_completed_run.status === 'success' ? 'ok' : 'missing';
+    statusText.innerHTML = `last build: <span class="badge ${cls}">#${s.last_completed_run.id} ${s.last_completed_run.status}</span> · ${fmtTime(s.last_completed_run.finished_at)}`;
+  } else {
+    statusText.innerHTML = '<span class="badge missing">no builds yet</span>';
+  }
+
+  renderCooldown(s.cooldown);
+  renderStages(s.stages);
+  renderRuns(s.recent_runs);
+
+  // Active run panel
+  if (running) {
+    currentRunPanel.style.display = 'block';
+    currentRunId.textContent = '#' + s.current_run.id;
+    currentRunMeta.textContent = `started ${fmtTime(s.current_run.started_at)} · ${s.current_run.triggered_by || ''}`;
+  } else {
+    currentRunPanel.style.display = 'none';
+  }
+
+  // Last completed run log
+  if (s.last_completed_run && s.recent_runs[0] && s.recent_runs[0].id === s.last_completed_run.id) {
+    // No log on /status payload — fetch via /status only includes the row, not log.
+    // Skip log display for now; log lives in DB and could be served via /runs/:id later.
+  }
+
+  // Build a signature of file mtimes so we can detect when a stage produced new output
+  const sig = s.stages.map(x => x.name + ':' + (x.age_ms ?? '∞')).join('|') + '|' + (s.latest_roster || '');
+  if (sig !== lastBuiltSig && lastBuiltSig !== '') {
+    reloadIframes(true);
+  }
+  lastBuiltSig = sig;
+
+  // Continue polling fast if running, slow if idle
+  if (running) {
+    if (pollHandle) clearTimeout(pollHandle);
+    pollHandle = setTimeout(refreshStatus, 2000);
+  } else {
+    if (pollHandle) clearTimeout(pollHandle);
+    pollHandle = setTimeout(refreshStatus, s.cooldown.remaining_ms > 0 ? 5000 : 15000);
+  }
+}
+
+async function clickRefresh() {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = 'Starting…';
+  try {
+    // Browser may prompt for basic auth on first POST. After that browser caches it.
+    const r = await fetch('/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ triggered_by: 'web' }) });
+    if (r.status === 401) {
+      alert('Authentication required. Reload and enter the dashboard password.');
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Refresh';
+      return;
+    }
+    if (r.status === 429) {
+      const j = await r.json();
+      alert('Cooldown active — try again in ' + fmtAge(j.remaining_ms));
+    } else if (r.status === 409) {
+      alert('A build is already running');
+    } else if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      alert('Refresh failed: ' + (j.error || r.statusText));
+    }
+  } catch (e) {
+    alert('Refresh request failed: ' + e.message);
+  }
+  refreshStatus();
+}
+
+function setTab(name) {
+  $$('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === name));
+  $('#view-status').style.display    = name === 'status'    ? 'block' : 'none';
+  $('#view-cohort').style.display    = name === 'cohort'    ? 'block' : 'none';
+  $('#view-drilldown').style.display = name === 'drilldown' ? 'block' : 'none';
+  $('#view-roster').style.display    = name === 'roster'    ? 'block' : 'none';
+  // Lazy-load iframe sources on first visit
+  if (name === 'cohort'    && (!iframeCohort.src    || iframeCohort.src    === 'about:blank')) iframeCohort.src    = IFRAME_SRCS.cohort;
+  if (name === 'drilldown' && (!iframeDrilldown.src || iframeDrilldown.src === 'about:blank')) iframeDrilldown.src = IFRAME_SRCS.drilldown;
+  if (name === 'roster'    && (!iframeRoster.src    || iframeRoster.src    === 'about:blank')) iframeRoster.src    = IFRAME_SRCS.roster;
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Wire up
+refreshBtn.addEventListener('click', clickRefresh);
+$$('.tab').forEach(el => el.addEventListener('click', () => setTab(el.dataset.tab)));
+refreshStatus();
+</script>
+
+</body>
+</html>

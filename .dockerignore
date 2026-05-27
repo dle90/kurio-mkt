@@ -1,0 +1,15 @@
+# Don't ship cache or generated artifacts — those live on the persistent
+# volume (DATA_DIR) on Railway, not in the image.
+.cache/
+out/
+data/
+
+# Local-only
+.env
+node_modules
+*.log
+canva_audit_*.md
+
+# Memory + Claude artifacts
+memory/
+.claude/

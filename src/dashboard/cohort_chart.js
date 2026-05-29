@@ -161,6 +161,7 @@ const triRows = triCols
     const m = revCD.get(c) || new Map();
     const spend = spendByDate.get(c) || 0;
     const reg = cohortRegCoded.get(c) || 0;
+    const regAll = cohortReg.get(c) || 0;
     let cum = 0;
     const cells = triCols.map(d => {
       if (d < c) return null;
@@ -168,7 +169,7 @@ const triRows = triCols
       cum += inc;
       return { inc, cum, roasTD: spend ? cum / spend : null };
     });
-    return { cohort: c, spend, reg, cpr: reg ? spend / reg : null,
+    return { cohort: c, spend, reg, regAll, cpr: reg ? spend / reg : null,
              cells, ltd: cum, roas: spend ? cum / spend : null, batch: isBatch(c) };
   });
 // reference rows — every remaining dong by source + true total per day
@@ -203,12 +204,12 @@ function cohortTriangle() {
     return `<td style="${style}">${day}<span class="cum">${cum}</span></td>`;
   };
   const dcol = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
-  const head = `<tr><th class="lbl">Cohort</th><th>Spend</th><th>Reg</th><th>CPR</th>` +
+  const head = `<tr><th class="lbl">Cohort</th><th>Spend</th><th title="Ad-coded registrations only — customers whose Getfly account carries an ads_code">Reg<br><small>ad</small></th><th title="All Getfly registrations on the cohort day (ad + organic + renewal + IKMC + app)">CRM<br><small>all</small></th><th>CPR</th>` +
     triCols.map(d => `<th>${dcol(d)}</th>`).join('') + `<th>LTD</th><th>ROAS</th></tr>`;
   const body = triRows.map(r =>
     `<tr${r.batch ? ' class="batchrow"' : ''}><td class="lbl mono">${r.cohort.slice(5)}` +
     `${r.batch ? ' <span class="batch" title="logging-batch day">⚠</span>' : ''}</td>` +
-    `<td>${r.spend ? fmtM(r.spend) : '—'}</td><td>${r.reg || '—'}</td><td>${r.cpr ? fmt(r.cpr) : '—'}</td>` +
+    `<td>${r.spend ? fmtM(r.spend) : '—'}</td><td>${r.reg || '—'}</td><td class="crm">${r.regAll || '—'}</td><td>${r.cpr ? fmt(r.cpr) : '—'}</td>` +
     r.cells.map(triCell).join('') +
     `<td><strong>${(r.ltd / 1e6).toFixed(1)}</strong></td>` +
     `<td class="${r.roas == null ? '' : r.roas >= 1 ? 'pos' : 'neg'}">${r.roas != null ? r.roas.toFixed(2) : '—'}</td></tr>`
@@ -216,11 +217,11 @@ function cohortTriangle() {
   const mm = v => v >= 1e5 ? (v / 1e6).toFixed(1) : '·';
   const sum = a => (a.reduce((s, v) => s + v, 0) / 1e6).toFixed(1);
   const refRows = refBuckets.map(b =>
-    `<tr class="tri-earlier${b.ad ? ' tri-ad' : ''}"><td class="lbl">${b.label}</td><td></td><td></td><td></td>` +
+    `<tr class="tri-earlier${b.ad ? ' tri-ad' : ''}"><td class="lbl">${b.label}</td><td></td><td></td><td></td><td></td>` +
     b.cells.map(v => `<td>${mm(v)}</td>`).join('') +
     `<td><strong>${sum(b.cells)}</strong></td><td></td></tr>`
   ).join('');
-  const totRow = `<tr class="tri-tot"><td class="lbl">TOTAL daily rev →</td><td></td><td></td><td></td>` +
+  const totRow = `<tr class="tri-tot"><td class="lbl">TOTAL daily rev →</td><td></td><td></td><td></td><td></td>` +
     dailyRev.map(v => `<td>${mm(v)}</td>`).join('') +
     `<td><strong>${sum(dailyRev)}</strong></td><td></td></tr>`;
   return `<table class="tri"><thead>${head}</thead><tbody>${body}${refRows}${totRow}</tbody></table>`;
@@ -309,6 +310,8 @@ table.tri .cum{display:block;font-size:8px;opacity:.55;font-weight:400;margin-to
 table.tri .tri-earlier td{color:var(--muted);font-style:italic;border-top:1px solid var(--border)}
 table.tri .tri-ad .lbl{color:var(--scale)}
 table.tri .tri-tot td{border-top:2px solid var(--ink);font-weight:600;color:var(--muted)}
+table.tri td.crm{color:var(--muted);font-weight:400}
+table.tri th small{display:block;font-size:8px;font-weight:400;opacity:.7;letter-spacing:.04em;margin-top:1px}
 .pos{color:var(--scale);font-weight:600}.neg{color:var(--kill)}
 .batch{color:var(--kill);font-weight:700}.batchrow{opacity:.55}
 footer{padding:24px 36px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
@@ -351,7 +354,7 @@ ${rosterPanel(ROSTER)}
   <h2>Cohort revenue development</h2>
   <p class="h2sub">One row per registration day. Columns = calendar days; each cell shows revenue <b>booked that day</b> from that cohort (big number, M VND) with <b>cumulative-to-date</b> small grey below. A cell turns <span style="color:var(--scale);font-weight:700">green</span> the day cumulative revenue passes ad spend — ROAS-to-date ≥ 1 (broken even).</p>
   <div class="panel" style="overflow:auto">${cohortTriangle()}</div>
-  <div class="callout"><b>Cohort ROAS</b> = LTD revenue ÷ that day's ad spend — the lag-correct return (spend and revenue from the same people). Scan a row left-to-right: how soon it goes green = payback speed; amber = still under water. The reference rows below the cohorts break out every remaining dong by source — earlier ad cohorts, ad with code not captured, renewal, organic page, and other — so each column reconciles to total daily revenue. Green labels are still ad-driven. ⚠ = logging-batch day (created_at piled up). Spend covers Kurio 2 + 3 + 5. The rightmost column (${triCols[triCols.length - 1]}) is a partial day — its spend and revenue are still landing.</div>
+  <div class="callout"><b>Cohort ROAS</b> = LTD revenue ÷ that day's ad spend — the lag-correct return (spend and revenue from the same people). Scan a row left-to-right: how soon it goes green = payback speed; amber = still under water. <b>Reg/ad</b> counts only ads-code-attributed registrations (used for CPR, since spend is for ads); <b>CRM/all</b> is every Getfly account created that day across all channels (ad + organic + renewal + IKMC + app) — the gap matches what the team sees in the CRM directly. The reference rows below the cohorts break out every remaining dong by source — earlier ad cohorts, ad with code not captured, renewal, organic page, and other — so each column reconciles to total daily revenue. Green labels are still ad-driven. ⚠ = logging-batch day (created_at piled up). Spend covers Kurio 2 + 3 + 5. The rightmost column (${triCols[triCols.length - 1]}) is a partial day — its spend and revenue are still landing.</div>
 </section>
 
 </main>
@@ -364,7 +367,7 @@ fs.writeFileSync('out/cohort.html', html);
 console.log(`\nWrote out/cohort.html`);
 console.log(`  ${triRows.length} cohort rows · window ${triCols[0]} → ${triCols[triCols.length - 1]}`);
 for (const r of triRows) {
-  console.log(`  ${r.cohort}  spend ${fmt(r.spend).padStart(11)}  reg ${String(r.reg).padStart(3)}  LTD rev ${(r.ltd / 1e6).toFixed(1).padStart(6)}M  ROAS ${r.roas != null ? r.roas.toFixed(2) : '—'}`);
+  console.log(`  ${r.cohort}  spend ${fmt(r.spend).padStart(11)}  reg ${String(r.reg).padStart(3)} / CRM ${String(r.regAll).padStart(3)}  LTD rev ${(r.ltd / 1e6).toFixed(1).padStart(6)}M  ROAS ${r.roas != null ? r.roas.toFixed(2) : '—'}`);
 }
 console.log(`\nTotal revenue booked per day (all sources, fresh Getfly orders):`);
 for (const d of triCols.slice(-7)) {

@@ -123,9 +123,12 @@ for (const a of ACCOUNTS) {
 
 // ---- 5. reg per (day, code) ----
 const regDC = new Map();
-const regDayTotal = new Map();
+const regDayTotal = new Map();      // ad-coded only — for per-code cells
+const regCRMDayTotal = new Map();   // all CRM registrations, any source — for the team's reconciliation
 for (const [, v] of acctByPhone) {
-  if (!v.created || !v.ads_code || !days.includes(v.created)) continue;
+  if (!v.created || !days.includes(v.created)) continue;
+  regCRMDayTotal.set(v.created, (regCRMDayTotal.get(v.created) || 0) + 1);
+  if (!v.ads_code) continue;
   const code = norm(v.ads_code);
   regDC.set(v.created + '|' + code, (regDC.get(v.created + '|' + code) || 0) + 1);
   regDayTotal.set(v.created, (regDayTotal.get(v.created) || 0) + 1);
@@ -179,7 +182,7 @@ function roasStyle(roas) {
   return `background:hsl(38 82% ${95 - Math.min(roas, 1) * 17}%);color:#3a2d05`;
 }
 function cell(spend, reg, rev) {
-  if (!spend && !rev) return '<td class="c x"></td>';
+  if (!spend && !rev && !reg) return '<td class="c x"></td>';
   const roas = spend ? rev / spend : null;
   const title = `LTD rev ${fmt(rev)}  ·  spend ${fmt(spend)}  ·  ${reg} reg  ·  ROAS ${roas != null ? roas.toFixed(2) : '—'}`;
   return `<td class="c" style="${roasStyle(roas)}" title="${title}">` +
@@ -201,10 +204,20 @@ for (const code of codeList) {
 const TS = days.reduce((a, d) => a + (spendDayTotal.get(d) || 0), 0);
 const TR = days.reduce((a, d) => a + (regDayTotal.get(d) || 0), 0);
 const TV = days.reduce((a, d) => a + (revDayTotal.get(d) || 0), 0);
-const totRow = `<tr class="tot"><td class="cn">TOTAL / day</td>` +
+const TRC = days.reduce((a, d) => a + (regCRMDayTotal.get(d) || 0), 0);
+const totRow = `<tr class="tot"><td class="cn">TOTAL / day · ad-coded</td>` +
   days.map(d => cell(spendDayTotal.get(d) || 0, regDayTotal.get(d) || 0, revDayTotal.get(d) || 0)).join('') +
   `<td class="num">${fmt(TS)}</td><td class="num">${TR}</td><td class="num">${fmt(TV)}</td>` +
-  `<td class="num roas" style="${roasStyle(TS ? TV / TS : null)}">${TS ? (TV / TS).toFixed(2) : '—'}</td></tr>`;
+  `<td class="num roas" style="${roasStyle(TS ? TV / TS : null)}">${TS ? (TV / TS).toFixed(2) : '—'}</td></tr>` +
+  `<tr class="tot crm"><td class="cn">CRM reg / day · all sources</td>` +
+  days.map(d => {
+    const all = regCRMDayTotal.get(d) || 0;
+    const ad = regDayTotal.get(d) || 0;
+    if (!all) return '<td class="c x"></td>';
+    const title = `${all} CRM reg total · ${ad} ad-coded · ${all - ad} non-ad (organic / renewal / IKMC / app / no-code)`;
+    return `<td class="c crm-cell" title="${title}"><div class="rev">${all}</div><div class="sr"><span class="sp">+${all - ad}</span><span class="rg">&nbsp;</span></div></td>`;
+  }).join('') +
+  `<td class="num">—</td><td class="num">${TRC}</td><td class="num">—</td><td class="num">—</td></tr>`;
 
 const asOf = new Date().toISOString().slice(0, 16).replace('T', ' ');
 const html = `<!DOCTYPE html>
@@ -244,6 +257,8 @@ td.c.x{background:transparent}
 .roas{font-weight:700}
 tr:hover td.cn{background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
 tr.tot td{border-top:2px solid var(--ink);font-weight:700}tr.tot td.cn{background:var(--panel)}
+tr.tot.crm td{border-top:1px dashed var(--border);font-weight:500;color:var(--muted)}
+tr.tot.crm td.crm-cell{color:var(--ink)}tr.tot.crm td.crm-cell .sp{color:var(--muted);font-weight:400}
 .notes{margin-top:18px;padding:12px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--muted);max-width:1000px}
 .notes b{color:var(--ink)}
 footer{padding:20px 32px;border-top:1px solid var(--border);color:var(--muted);font-size:11.5px}
@@ -279,8 +294,14 @@ footer code{background:var(--panel);padding:1px 5px;border-radius:3px}
     "not matured yet", not "failed". Judge ROAS on the older (left) columns; judge recent days on
     spend·regs.</p>
     <p><b>Why codes.</b> Orders carry the customer's <code>ads_code</code> → code, never a campaign id,
-    so revenue &amp; ROAS exist only at the code level. The TOTAL row is true daily totals — it
-    includes Engage/brand spend that maps to no code, so code rows sum to slightly less.</p>
+    so revenue &amp; ROAS exist only at the code level. The TOTAL · ad-coded row is the true daily total of
+    ads-code-attributed activity — it includes Engage/brand spend that maps to no code, so the per-code rows
+    sum to slightly less.</p>
+    <p><b>Reg vs CRM.</b> The reg counter throughout this view is <b>ad-coded only</b> — customers whose
+    Getfly account carries an <code>ads_code</code>. The dashed <b>CRM reg / day</b> row below the TOTAL
+    shows every Getfly registration that day across all sources (ad + organic + renewal + IKMC scholarship +
+    app self-serve + ad-without-code-captured). The +N small number is the gap — what the team sees in CRM
+    that this view's ad-coded totals exclude.</p>
   </div>
 </main>
 <footer>

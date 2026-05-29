@@ -210,7 +210,7 @@ function cohortTriangle() {
     return `<td style="${style}">${day}<span class="cum">${cum}</span></td>`;
   };
   const dcol = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
-  const head = `<tr><th class="lbl">Cohort</th><th>Spend</th><th title="Ad-coded registrations only — customers whose Getfly account carries an ads_code">Reg<br><small>ad</small></th><th title="All Getfly registrations on the cohort day (ad + organic + renewal + IKMC + app)">CRM<br><small>all</small></th><th title="Meta-reported complete_registration events that day across Kurio 2+3+5">Meta<br><small>reg</small></th><th>CPR</th>` +
+  const head = `<tr><th class="lbl">Cohort</th><th>Spend</th><th title="Ad-coded registrations only — customers whose Getfly account carries an ads_code">Reg<br><small>ad</small></th><th title="All Getfly registrations on the cohort day (ad + organic + renewal + IKMC + app)">CRM<br><small>all</small></th><th title="Meta Pixel complete_registration events that day across Kurio 2+3+5 (raw pixel fires — includes re-submissions from phone numbers already in CRM)">Pixel<br><small>reg</small></th><th>CPR</th>` +
     triCols.map(d => `<th>${dcol(d)}</th>`).join('') + `<th>LTD</th><th>ROAS</th></tr>`;
   const body = triRows.map(r =>
     `<tr${r.batch ? ' class="batchrow"' : ''}><td class="lbl mono">${r.cohort.slice(5)}` +
@@ -361,7 +361,7 @@ ${rosterPanel(ROSTER)}
   <h2>Cohort revenue development</h2>
   <p class="h2sub">One row per registration day. Columns = calendar days; each cell shows revenue <b>booked that day</b> from that cohort (big number, M VND) with <b>cumulative-to-date</b> small grey below. A cell turns <span style="color:var(--scale);font-weight:700">green</span> the day cumulative revenue passes ad spend — ROAS-to-date ≥ 1 (broken even).</p>
   <div class="panel" style="overflow:auto">${cohortTriangle()}</div>
-  <div class="callout"><b>Cohort ROAS</b> = LTD revenue ÷ that day's ad spend — the lag-correct return (spend and revenue from the same people). Scan a row left-to-right: how soon it goes green = payback speed; amber = still under water. <b>Reg/ad</b> counts only ads-code-attributed registrations (used for CPR, since spend is for ads); <b>CRM/all</b> is every Getfly account created that day across all channels; <b>Meta/reg</b> is Meta's own reported <code>complete_registration</code> count (the pixel/onsite event Meta sees fire) — useful as a sanity check against CRM. Meta typically over-reports vs CRM (cross-device dedup + 7d-click attribution window vs CRM's stricter last-touch). The reference rows below the cohorts break out every remaining dong by source — earlier ad cohorts, ad with code not captured, renewal, organic page, and other. ⚠ = logging-batch day. Spend covers Kurio 2 + 3 + 5. The rightmost column (${triCols[triCols.length - 1]}) is a partial day — its spend and revenue are still landing.</div>
+  <div class="callout"><b>Cohort ROAS</b> = LTD revenue ÷ that day's ad spend — the lag-correct return (spend and revenue from the same people). Scan a row left-to-right: how soon it goes green = payback speed; amber = still under water. <b>Reg/ad</b> counts only ads-code-attributed registrations (used for CPR, since spend is for ads); <b>CRM/all</b> is every Getfly account created that day across all channels; <b>Pixel/reg</b> is the Meta Pixel's raw <code>complete_registration</code> fire count — useful as a sanity check against CRM. Pixel typically over-reports vs CRM-MKT because every form submission fires, even if that phone number already existed in CRM (CRM dedupes by phone, Pixel doesn't). On 2026-05-28 for example: Pixel 85 = 72 new + 13 existing-phone re-submissions. The reference rows below the cohorts break out every remaining dong by source — earlier ad cohorts, ad with code not captured, renewal, organic page, and other. ⚠ = logging-batch day. Spend covers Kurio 2 + 3 + 5. The rightmost column (${triCols[triCols.length - 1]}) is a partial day — its spend and revenue are still landing.</div>
 </section>
 
 </main>
@@ -374,7 +374,7 @@ fs.writeFileSync('out/cohort.html', html);
 console.log(`\nWrote out/cohort.html`);
 console.log(`  ${triRows.length} cohort rows · window ${triCols[0]} → ${triCols[triCols.length - 1]}`);
 for (const r of triRows) {
-  console.log(`  ${r.cohort}  spend ${fmt(r.spend).padStart(11)}  reg ${String(r.reg).padStart(3)} / CRM ${String(r.regAll).padStart(3)} / Meta ${String(r.metaReg).padStart(3)}  LTD rev ${(r.ltd / 1e6).toFixed(1).padStart(6)}M  ROAS ${r.roas != null ? r.roas.toFixed(2) : '—'}`);
+  console.log(`  ${r.cohort}  spend ${fmt(r.spend).padStart(11)}  reg ${String(r.reg).padStart(3)} / CRM ${String(r.regAll).padStart(3)} / Pixel ${String(r.metaReg).padStart(3)}  LTD rev ${(r.ltd / 1e6).toFixed(1).padStart(6)}M  ROAS ${r.roas != null ? r.roas.toFixed(2) : '—'}`);
 }
 console.log(`\nTotal revenue booked per day (all sources, fresh Getfly orders):`);
 for (const d of triCols.slice(-7)) {

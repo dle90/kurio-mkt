@@ -39,7 +39,10 @@ export const STAGES = [
     label: 'Getfly orders (YTD)',
     script: 'src/roas/fetch_getfly_orders_ytd.js',
     outFile: '.cache/getfly_orders_ytd.json',
-    maxAgeMs: 1 * HOUR,
+    // Today's revenue moves fast as orders book through the day. Pull is ~7s
+    // and stops early once it sees pre-SINCE dates, so 10min is cheap. Keep
+    // in line with the chart staleness so manual Refresh always re-pulls.
+    maxAgeMs: 10 * MIN,
   },
   {
     name: 'getfly_accounts',

@@ -162,7 +162,10 @@ for (const r of orderRecs) {
   m.set(r.bd, (m.get(r.bd) || 0) + r.amt);
 }
 const triRows = triCols
-  .filter(c => revCD.has(c) || cohortRegCoded.has(c))
+  // Show a row whenever ANY signal exists for that day: in-window cohort
+  // revenue, ad-coded reg, total CRM reg (organic counts even on ads-off
+  // days), daily ad spend, or Meta Pixel reg.
+  .filter(c => revCD.has(c) || cohortRegCoded.has(c) || cohortReg.has(c) || spendByDate.has(c) || metaRegByDate.has(c))
   .map(c => {
     const m = revCD.get(c) || new Map();
     const spend = spendByDate.get(c) || 0;

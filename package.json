@@ -13,6 +13,8 @@
     "analyze:decay": "node src/analyze/creative-decay.js",
     "analyze:age": "node src/analyze/adset-age.js",
     "analyze:samecreative": "node src/analyze/same-creative-monthly.js",
+    "analyze:lp": "node src/analyze/lp_creative_matrix.cjs",
+    "analyze:reup": "node src/analyze/reup_lift.cjs",
     "analyze:week-apr29": "node src/analyze/week-apr29.js",
     "create": "node src/campaigns/create.js",
     "inspect:getfly": "node src/getfly/inspect.js",

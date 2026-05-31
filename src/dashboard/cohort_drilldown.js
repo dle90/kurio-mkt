@@ -157,6 +157,43 @@ for (const [k, v] of regDC) bump(k.slice(11), 'reg', v);
 for (const [k, v] of revDC) bump(k.slice(11), 'rev', v);
 const codeList = [...codeWin.keys()].sort((a, b) => (codeWin.get(b).spend) - (codeWin.get(a).spend));
 
+// ---- 7b. code → representative ad → public Facebook post URL ----
+// The Code column links to the underlying boosted-post so the team can eyeball
+// the creative. object_story_id is stable per ad, so we cache the map in
+// .cache/ (persists on the prod volume) and only look up codes we haven't
+// resolved yet — keeps the per-build Meta cost near zero after the first run.
+const FBLINKS = '.cache/code_fb_links.json';
+let fbLinks = {};
+try { fbLinks = JSON.parse(fs.readFileSync(FBLINKS, 'utf8')); } catch { /* first run */ }
+const adCands = new Map();              // code -> [{ad_id, month, spend}]
+for (const r of MONTHLY) {
+  const c = resolveAd(r);
+  if (!c || !r.ad_id) continue;
+  (adCands.get(c) || adCands.set(c, []).get(c)).push({ ad_id: r.ad_id, month: r.month || '', spend: +r.spend || 0 });
+}
+let looked = 0; const MAX_LOOKUPS = 120;  // backstop so one build can't run away
+for (const code of codeList) {
+  if (fbLinks[code]?.url) continue;       // already resolved (stable) — reuse
+  if (looked >= MAX_LOOKUPS) break;
+  // most recent month, then highest spend = the representative live-ish ad
+  const cands = (adCands.get(code) || []).sort((a, b) => b.month.localeCompare(a.month) || b.spend - a.spend).slice(0, 2);
+  for (const cand of cands) {
+    looked++;
+    try {
+      const ad = await meta.get(`/${cand.ad_id}`, { fields: 'creative{object_story_id,effective_object_story_id}' });
+      const story = ad.creative?.object_story_id || ad.creative?.effective_object_story_id;
+      if (story && story.includes('_')) {
+        const [pid, poid] = story.split('_');
+        fbLinks[code] = { url: `https://www.facebook.com/${pid}/posts/${poid}`, ad_id: cand.ad_id };
+        break;
+      }
+    } catch { /* skip unresolvable ad */ }
+    await sleep(200);
+  }
+}
+try { fs.writeFileSync(FBLINKS, JSON.stringify(fbLinks, null, 2)); } catch { /* read-only fs ok */ }
+console.error(`FB links: ${Object.keys(fbLinks).length} codes mapped (${looked} new lookups this build)`);
+
 // ---- 8. console summary ----
 const P = s => console.log(s);
 P('='.repeat(78));
@@ -196,7 +233,11 @@ let body = '';
 for (const code of codeList) {
   const w = codeWin.get(code);
   const roas = w.spend ? w.rev / w.spend : null;
-  body += `<tr><td class="cn">${esc(code)}</td>` +
+  const fbUrl = fbLinks[code]?.url;
+  const codeCell = fbUrl
+    ? `<a class="codelink" href="${fbUrl}" target="_blank" rel="noopener" title="Open the ad on Facebook ↗">${esc(code)}</a>`
+    : esc(code);
+  body += `<tr><td class="cn">${codeCell}</td>` +
     days.map(d => cell(spendDC.get(d + '|' + code) || 0, regDC.get(d + '|' + code) || 0, revDC.get(d + '|' + code) || 0)).join('') +
     `<td class="num">${fmt(w.spend)}</td><td class="num">${w.reg}</td><td class="num">${fmt(w.rev)}</td>` +
     `<td class="num roas" style="${roasStyle(roas)}">${roas != null ? roas.toFixed(2) : '—'}</td></tr>`;
@@ -243,6 +284,9 @@ box-shadow:0 5px 7px -5px rgba(0,0,0,.30)}
 th.cn,td.cn{text-align:left;position:sticky;left:0;background:var(--panel);min-width:174px;
 border-right:2px solid var(--border);font-weight:700;font-family:"SF Mono",Menlo,monospace;font-size:11.5px}
 td.cn{z-index:1;box-shadow:5px 0 7px -5px rgba(0,0,0,.24)}
+a.codelink{color:var(--accent);text-decoration:none;border-bottom:1px dotted color-mix(in srgb,var(--accent) 55%,transparent)}
+a.codelink:hover{text-decoration:none;border-bottom-style:solid}
+a.codelink::after{content:" ↗";font-size:9px;opacity:.5}
 th.cn{top:0;left:0;z-index:4;box-shadow:5px 5px 7px -5px rgba(0,0,0,.30)}
 th.dh.td{color:var(--accent)}
 td{border-bottom:1px solid var(--border)}

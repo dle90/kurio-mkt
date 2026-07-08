@@ -67,7 +67,12 @@ export function loadAttribution() {
     for (const t of String(r.adset_name || '').split(/[+_,\s\\\/]/).map(x => x.trim()).filter(Boolean)) {
       const mm = findMatch(t); if (mm) return mm;
     }
-    for (const t of String(r.campaign_name || '').split(/[+_,\s\\\/\-]/).map(x => x.trim()).filter(t => t && t.length >= 2)) {
+    // Campaign names carry a dd/mm date stamp ("..._14/05_CODE45_...") whose
+    // day fragment ("14") would match a bare codeNN (code14) before the real
+    // CODE token is reached — dumping the whole campaign's spend onto a wrong
+    // date-shaped code. Strip the slash-date first; ads codes never contain '/'.
+    const cnClean = String(r.campaign_name || '').replace(/\d{1,2}\/\d{1,2}(\/\d{2,4})?/g, ' ');
+    for (const t of cnClean.split(/[+_,\s\\\/\-]/).map(x => x.trim()).filter(t => t && t.length >= 2)) {
       const mm = findMatch(t); if (mm) return mm;
     }
     return null;

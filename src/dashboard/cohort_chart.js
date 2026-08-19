@@ -28,7 +28,16 @@ function loadLatestRoster() {
 }
 
 const DAYS = +(process.env.DAYS || 24);
-const CHUNK = +(process.env.CHUNK || 12);
+// 3-day windows, not 12. This stage asks for `actions` at time_increment=1,
+// by far the heaviest query in the pipeline, and Kurio 2 is the account that
+// chronically throttles (CLAUDE.md: "K2's recent window fails Meta error 2 as
+// a single 15-day daily query — fetch in ~3-day sub-chunks"). At CHUNK=12 it
+// was failing on K2's very first window. More calls, each small enough for
+// Meta's ads-insights throttle to accept.
+// NB: bare CHUNK is shared with cohort_drilldown.js (default 12) and
+// dashboard/fetch.js (default 15), so prefer COHORT_CHART_CHUNK to retune
+// just this stage — a global CHUNK=12 would silently reinstate the bug.
+const CHUNK = +(process.env.COHORT_CHART_CHUNK || process.env.CHUNK || 3);
 const META_ACCOUNTS = [
   { id: 'act_1071893357737329', name: 'Kurio 2' },
   { id: 'act_930175825635997',  name: 'Kurio 3' },

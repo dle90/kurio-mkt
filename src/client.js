@@ -32,6 +32,49 @@ const TARGETS = (process.env.META_AD_ACCOUNT_IDS || RAW_ACCOUNT || '')
 
 const BASE = `https://graph.facebook.com/${VERSION}`;
 
+// ---- Retry policy: deliberately fail-fast ----
+//
+// Meta's ads-insights throttle refills on roughly an hour scale, so the old
+// 30/60/120/240s ladder (7.5 min) could never outlast a real throttle — it just
+// burned ~10 min per stage and left the account deeper in the hole for the next
+// attempt. One short retry absorbs a genuine transient blip; past that we fail
+// fast, so a refresh reports back in ~1 min instead of ~10.
+//
+// Escape hatch for long batch jobs that would rather wait than die:
+//   META_MAX_RETRIES=4 META_RETRY_BASE_MS=30000 node src/roas/fetch_meta_spend_monthly.js
+// META_MAX_RETRIES=0 disables retrying entirely.
+// Parse an int env var defensively. Railway hands you an EMPTY STRING for a
+// variable created with no value, and +'' === 0 — which would have silently
+// disabled retrying altogether. Garbage must fall back, not become NaN (a NaN
+// delay makes setTimeout fire immediately, turning a retry into an instant
+// re-hammer of the endpoint that just throttled us).
+function envInt(name, fallback, min, max) {
+  const raw = (process.env[name] ?? '').trim();
+  if (raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.trunc(n)));
+}
+
+const MAX_RETRIES = envInt('META_MAX_RETRIES', 1, 0, 10);
+const RETRY_BASE_MS = envInt('META_RETRY_BASE_MS', 20_000, 1_000, 300_000);
+// Cap any single wait, so a large META_MAX_RETRIES can't compound into hours.
+const MAX_RETRY_WAIT_MS = 300_000;
+
+// 4/17/32/613 = rate limits; 1/2 = Meta's transient "unknown error" /
+// "service temporarily unavailable" (common on heavy insights queries).
+const isThrottle = err => {
+  const code = err?.code;
+  return code === 1 || code === 2 || code === 4 || code === 17 ||
+    code === 32 || code === 613 || err?.error_subcode === 2446079;
+};
+
+// ms to wait before the next attempt, or null to give up now.
+function retryDelay(err, retry) {
+  if (!isThrottle(err) || retry >= MAX_RETRIES) return null;
+  return Math.min(MAX_RETRY_WAIT_MS, (2 ** retry) * RETRY_BASE_MS);
+}
+
 async function request(method, path, { params = {}, body, retry = 0 } = {}) {
   const url = new URL(`${BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
@@ -48,15 +91,10 @@ async function request(method, path, { params = {}, body, retry = 0 } = {}) {
   const json = await res.json();
   if (!res.ok || json.error) {
     const code = json.error?.code;
-    const subcode = json.error?.error_subcode;
     const msg = json.error?.message || res.statusText;
-    // 4/17/32/613 = rate limits; 1/2 = Meta's transient "unknown error" /
-    // "service temporarily unavailable" (common on heavy insights queries).
-    const isRateLimit = code === 1 || code === 2 || code === 4 || code === 17 ||
-      code === 32 || code === 613 || subcode === 2446079;
-    if (isRateLimit && retry < 4) {
-      const wait = (2 ** retry) * 30_000;
-      console.log(`  [rate-limited, sleeping ${wait / 1000}s before retry ${retry + 1}/4]`);
+    const wait = retryDelay(json.error, retry);
+    if (wait != null) {
+      console.log(`  [throttled (${code}), sleeping ${wait / 1000}s before retry ${retry + 1}/${MAX_RETRIES}]`);
       await new Promise(r => setTimeout(r, wait));
       return request(method, path, { params, body, retry: retry + 1 });
     }
@@ -70,14 +108,9 @@ async function fetchWithRetry(url, retry = 0) {
   const json = await res.json();
   if (!res.ok || json.error) {
     const code = json.error?.code;
-    const subcode = json.error?.error_subcode;
-    // 4/17/32/613 = rate limits; 1/2 = Meta's transient "unknown error" /
-    // "service temporarily unavailable" (common on heavy insights queries).
-    const isRateLimit = code === 1 || code === 2 || code === 4 || code === 17 ||
-      code === 32 || code === 613 || subcode === 2446079;
-    if (isRateLimit && retry < 4) {
-      const wait = (2 ** retry) * 30_000;
-      console.log(`  [paging rate-limited, sleeping ${wait / 1000}s before retry ${retry + 1}/4]`);
+    const wait = retryDelay(json.error, retry);
+    if (wait != null) {
+      console.log(`  [paging throttled (${code}), sleeping ${wait / 1000}s before retry ${retry + 1}/${MAX_RETRIES}]`);
       await new Promise(r => setTimeout(r, wait));
       return fetchWithRetry(url, retry + 1);
     }

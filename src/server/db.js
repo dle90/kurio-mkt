@@ -44,11 +44,13 @@ export async function init() {
     return;
   }
   await pool.query(SCHEMA);
-  // Any 'running' rows from a prior process crashed mid-build. Mark as error
-  // so the cooldown gate isn't blocked forever.
+  // Any 'running' rows from a prior process crashed mid-build. Mark as 'aborted'
+  // (not 'error') so the cooldown gate can tell a genuine failed build apart from
+  // a container restart — a redeploy landing mid-build should not lock the
+  // Refresh button for 10 minutes.
   const r = await pool.query(
-    `UPDATE build_runs SET status = 'error', finished_at = NOW(),
-       log = COALESCE(log, '') || E'\n[server restart: marked as error]'
+    `UPDATE build_runs SET status = 'aborted', finished_at = NOW(),
+       log = COALESCE(log, '') || E'\n[server restart: marked as aborted]'
      WHERE status = 'running' RETURNING id`
   );
   if (r.rowCount) console.log(`[db] reclaimed ${r.rowCount} stale 'running' row(s) on startup`);

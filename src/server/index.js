@@ -134,6 +134,8 @@ app.post('/refresh', requireAuth, async (req, res) => {
       return res.status(429).json({
         error: 'cooldown active',
         remaining_ms: cool.remaining_ms,
+        last_run_at: cool.last_run_at,
+        last_status: cool.last_status,
         last_success_at: cool.last_success_at,
       });
     }

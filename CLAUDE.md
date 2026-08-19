@@ -98,7 +98,7 @@ Running decisions and guardrails carried forward from prior work. Read [FINDINGS
 - `MESS_*` (Messenger) and `ENGAGE_*` (engagement/awareness) campaigns must NOT be judged by CPR — they optimize for `MESSAGE_PAGE` clicks or reach, not registrations. Use cost-per-conversation or CPM/reach instead, or pause if those channels aren't valued.
 
 **API gotchas:**
-- Kurio 2 frequently hits Meta rate-limit error #4. `src/client.js` already has exponential-backoff retry for codes 4/17/32/613 + subcode 2446079. Don't re-implement.
+- Kurio 2 frequently hits Meta rate-limit error #4. `src/client.js` retries codes 1/2/4/17/32/613 + subcode 2446079, but is **deliberately fail-fast**: 1 retry at 20s (was a 30/60/120/240s ladder, which could never outlast an hour-scale Meta throttle and just burned ~10 min per stage). Tune with `META_MAX_RETRIES` / `META_RETRY_BASE_MS`; per-stage overrides go in `STAGES[].env` in `src/server/refresh.js`. Don't re-implement.
 - The ad account ID in `.env` is the actual account ID (16-digit from Ads Manager → Ad account settings) — NOT the App ID. The client auto-prepends `act_` if missing.
 - Ad creatives are mostly boosted Page posts (`object_story_id`). Fetching the underlying post needs `pages_read_engagement`, which the token doesn't have. Fall back to `creative.name` for ad copy — it carries the post body with a date-hash suffix that `src/analyze/creatives.js` strips.
 
@@ -110,10 +110,10 @@ Running decisions and guardrails carried forward from prior work. Read [FINDINGS
 - ✅ Time-dimension finding (most important so far): **creative-level fatigue is the dominant CPR driver.** Top ads' median CPR ~doubles by month 3 of their lifetime. Ad-set age (the wrapper) has near-zero correlation with CPR (Pearson r=0.071); the fatigue lives at the ad creative level.
 - ✅ Seasonal CPR is essentially flat Oct 2025 → May 2026 (~344k → 350k → 368k VND across PRE/IKMC/POST phases). The IKMC organic window does NOT lower CPR — it shifts the funnel mix (cheaper LPVs at worse conversion). Don't budget for an "IKMC efficiency window."
 - ⚠️ During IKMC weeks (esp Jan 21 + Jan 28), LPV volume spiked to 8.4k/week at 2.5% conversion vs the ~6% baseline. Plausibly IKMC contest-curious traffic that doesn't convert to paid registrations — worth tracking IKMC-specific landing pages with a different success metric.
-- ❓ Open: is brand awareness an actual KPI? Decides fate of `Engage - vtv` (lowercase)
+- ✅ RESOLVED 2026-05-21: brand awareness IS a valued channel — `Engage - vtv` campaigns are intentional organic drivers. Keep them; never flag as waste or pause candidates (see "Migrated Claude memory" below).
 - ❓ Open: confirm with stakeholders that `complete_registration` is the right success metric
 - ✅ Apr 29 week investigation: spend dropped 23% (76.9M → 59.2M VND), reg held steady, CPR fell 24% (316k → 239k). Driven by pruning ~25 marginal campaigns + broad same-campaign improvements (11/15 active campaigns improved). Concentration in `_xpage` / `_xpage_kv` LP-suffix winners. **Lesson: pruning underperformers is the most direct controllable CPR lever.**
-- 🚨 The `Engage - vtv` (capital + lowercase) pause recommendation from the original audit is **still unactioned 90 days later** — both campaigns spent 2.2M VND in the Apr 29 week with 0 reg. Resurface to user when relevant.
+- ✅ SUPERSEDED 2026-05-21: the `Engage - vtv` pause recommendation is **withdrawn** — vtv is intentional brand/organic spend whose halo the ads_code attribution structurally can't capture; CPR/ROAS is the wrong lens for it. Note: `src/reports/daily.js` ROSTER FLAGS and FINDINGS.md still emit the old pause flag in code — update them when next touched.
 - ✅ `_xpage` / `_xpage_kv` is the **new landing page** (rolled out ~2026-04). Confirmed by user 2026-05-19. XPAGE codes systematically outperform older LP variants — May 2026 XPAGE ROAS 0.91 vs non-XPAGE 0.65 on currently-running codes. The migration is underway and is the single biggest known lever.
 - ✅ **Thao LP (`toantuduy.kurio.vn/thao`) is organic IKMC channel, NOT Meta paid.** ~667M VND YTD revenue lands there, handled by sales rep Thao. Zero Meta creatives point to it; zero fbclid/utm on those sheet rows. Must be EXCLUDED from any Meta ROAS numerator. ([see project_thao_organic_lp.md memory])
 
@@ -140,7 +140,7 @@ DASHBOARD_PASSWORD=<pick-one> npm run server
 DB-less mode: cooldown state lives in-process and resets on restart. Set `DATABASE_URL` for persistence.
 
 **Refresh contract — incremental by design.**
-- Hard 10-min cooldown between successful runs (HTTP 429 otherwise; bypass with `POST /refresh?force=1`).
+- Hard 10-min cooldown between runs — **success OR failure** (HTTP 429 otherwise; bypass with `POST /refresh?force=1`). Failures cool down too because a failed run is nearly always a Meta throttle, and an immediate re-click deepens it. Runs reclaimed after a server restart are marked `aborted` and do NOT start a cooldown.
 - Per-stage staleness skip — a stage only runs if its output file is older than its threshold:
   - Getfly orders YTD: 1 h
   - Getfly accounts: 6 h
@@ -163,3 +163,18 @@ DB-less mode: cooldown state lives in-process and resets on restart. Set `DATABA
 - `src/server/refresh.js` — stage list, staleness checks, pipeline runner (spawns existing fetch scripts as child processes with `cwd = DATA_DIR`, so the scripts' relative paths still work).
 - `src/server/db.js` — Postgres schema + queries, in-memory fallback when `DATABASE_URL` is unset. Reclaims stale `running` rows on startup.
 - `src/server/views/index.html` — single-page dashboard (status panel + 3 iframe tabs for cohort/drilldown/roster). Polls `/status` every 2 s during a build, 15 s when idle.
+
+---
+
+## Migrated Claude memory (2026-08-14)
+
+Claude's auto-memory was machine-local and didn't travel with this folder; it's consolidated here. Dated point-in-time observations (mostly May 2026) — full originals with detail in [.claude/memory-archive/](.claude/memory-archive/); read the relevant file before deep work on that topic.
+
+- **Keep Engage/vtv** (feedback, 2026-05-21): vtv campaigns intentionally drive organic/brand; judging them by CPR or ad-attributed ROAS is the wrong lens. Never list them as "waste" / "0 reg" / pause candidates in any report or roster flag.
+- **Account structure**: Kurio 2 (`act_1071893357737329`), Kurio 3 (`act_930175825635997`), Kurio 5 (`act_1069029708221793`) are **parallel duplicate accounts** — identical targeting (VN parents 28–50, OUTCOME_SALES), same Pixel `785394990226382` so conversion learning is pooled. The account ID is not a performance lever; real differences are ad-set config drift (placement: K3/K5 FB-only vs K2 mixed; Advantage+ audience: K2 47% / K3 18% / K5 0%) plus accumulated saturation (K2 deepest). Compare CPR within-account. Standing gap: positive custom audiences (Lookalike-of-registrants) near-zero everywhere — biggest unexplored targeting lever.
+- **Kurio 5 pipeline**: K5 was excluded from the ROAS pipeline until 2026-05-21 — figures dated before that are K2+3 only. `CODE_ALIASES` in `src/roas/attribution.js` maps `code15_xpage-5`→`code15-xp-5`. K5 codes are the `-5`/`xp-5` family. As of then, `src/dashboard/build.js` / `dashboard:fetch` still covered K2+3 only for some sections — check before trusting dashboard K5 coverage.
+- **Dashboard status** (as of 2026-05-22): Section 3 (cohort revenue triangle) done; Section 1 has K5 added but the registration metric still uses the Meta pixel count instead of the CRM ad-coded count (pending); Sections 4–6 not yet reviewed (S6 stub needs order `creator`/`sale_user` from Getfly). Gotcha: K2's recent window fails Meta error 2 as a single 15-day daily query — fetch in ~3-day sub-chunks. Decisions: registration date = Getfly account `created_at` (±1 day, flag batch-flush days); registration count of record = **ad-coded Getfly accounts**, not the Meta pixel.
+- **Team context** (2026-05-19): the media buyer had NOT seen any of this repo's analyses — don't frame their actions as ignoring recommendations; it's an information-flow gap. Default to share-ready one-pagers over internal audit prose. (Duc said "we will change that shortly" — verify current state before assuming still true.)
+- **Creative-refresh thread** (paused 2026-05-28, `.claude/memory-archive/project_creative_refresh_thread.md` has the full resume checklist): creative fatigue is the dominant CPR driver → refresh every 6–8 weeks. **Winning formula** distilled from top-ROAS briefs: first-person mother-diary tone, antagonist + contrast (20tr trung tâm fail vs 80k Kurio), specific number anchors, outcome first, authority/community proof, standard offer close. Losers invert those. 5 new briefs drafted in `data/briefs-2026-05-28/`. Master ad-content tracker = Google Sheet "KURIO - Content" (`1IsnziRsnVSuO7yW7fesSd7eRWAgOHAHWuBZ7ItfdRKw`, gid `1331156303`, owner Tuấn); pipeline `src/roas/fetch_content_sheet.js` → `join_codes_to_briefs.cjs` maps codes→brief docs (34/50 top spenders mapped; 16 off-grid codes like `cx*`/`nm*`/`vtv`). Resume plan: Canva `copy-design` from code200 (`DAG_mh27OeY`) layout and swap in brief copy.
+- **Canva MCP**: connected at user scope (`mcp__canva__*`, schemas via ToolSearch). Workspace verified OK by Duc 2026-05-28 for Kurio creative — don't re-litigate. Brand kit is empty → unbranded output by default. Never delete designs in the account.
+- **Getfly `account_source` decode**: 31 = Meta ads (carries `ads_code`), 7 = organic FB page, 5 = renewal (gia hạn), 19 = học bổng IKMC scholarship, 11 = app self-serve signups, 25 = mixed manual (route by note: "Thí sinh IKMC" vs "Admin"), 9 = referral, 16 = Kurio Admin manual entry. ~40% of Getfly revenue is non-Meta — keep all IKMC channels out of Meta ROAS.

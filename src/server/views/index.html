@@ -307,7 +307,14 @@ function reloadIframes(stagesChanged) {
 
 async function refreshStatus() {
   const s = await fetchStatus();
-  if (!s) return;
+  if (!s) {
+    // Keep the poll loop alive. Returning here without rescheduling froze the
+    // page permanently on a single transient /status failure — with the Refresh
+    // button stuck in whatever disabled state it was last left in.
+    if (pollHandle) clearTimeout(pollHandle);
+    pollHandle = setTimeout(refreshStatus, 5000);
+    return;
+  }
 
   dataDirLabel.textContent = '— ' + s.data_dir + (s.db_enabled ? '' : ' (in-memory)');
 

@@ -33,6 +33,13 @@ export const STAGES = [
     script: 'src/roas/fetch_meta_spend_monthly.js',
     outFile: '.cache/meta_spend_monthly.json',
     maxAgeMs: 24 * HOUR,
+    // This one opts OUT of the client's fail-fast default. It is a once-daily
+    // batch that already runs 3–13 min, so latency is not the concern — but it
+    // catches per-account errors and continues (fetch_meta_spend_monthly.js:37),
+    // writes the cache anyway, and exits 0. A fail-fast drop would therefore
+    // silently ship a truncated cache that the 24 h threshold pins in place for
+    // a whole day. Patience is cheaper than a day of missing Kurio 2 spend.
+    env: { META_MAX_RETRIES: '4', META_RETRY_BASE_MS: '30000' },
   },
   {
     name: 'getfly_orders',
@@ -78,8 +85,8 @@ export const STAGES = [
   },
 ];
 
-// Cooldown: how long after the last *successful* refresh until POST /refresh
-// will run anything new. Force=true bypasses this.
+// Cooldown: how long after the last *completed* refresh — success OR failure —
+// until POST /refresh will run anything new. Force=true bypasses this.
 export const COOLDOWN_MS = 10 * MIN;
 
 function yesterday() {
@@ -122,25 +129,39 @@ export async function stageStatuses() {
 }
 
 // Get cooldown info — ms remaining until POST /refresh accepts a new build.
+//
+// Keys off the last *completed* run, not the last successful one. A failure is
+// almost always a Meta throttle, and re-clicking Refresh straight away deepens
+// it — that is exactly how run #219's error 4 became #220's error 2 two minutes
+// later. Cooling down after failures is the whole point. force=1 still bypasses.
 export async function cooldownStatus() {
-  const last = await db.lastSuccessRun();
-  if (!last || !last.finished_at) return { remaining_ms: 0, last_success_at: null };
+  const last = await db.lastCompletedRun();
+  // A run reclaimed by a restart isn't evidence of a throttle — don't cool down.
+  if (last && last.status === 'aborted') {
+    return { remaining_ms: 0, last_run_at: last.finished_at, last_status: last.status, last_success_at: null };
+  }
+  if (!last || !last.finished_at) {
+    return { remaining_ms: 0, last_run_at: null, last_status: null, last_success_at: null };
+  }
   const elapsed = Date.now() - new Date(last.finished_at).getTime();
   return {
     remaining_ms: Math.max(0, COOLDOWN_MS - elapsed),
-    last_success_at: last.finished_at,
+    last_run_at: last.finished_at,
+    last_status: last.status,
+    // Kept for API back-compat; null when the last run failed.
+    last_success_at: last.status === 'success' ? last.finished_at : null,
   };
 }
 
 // Spawn a child node process, capturing stdout/stderr.
 // cwd = DATA_DIR so the script's relative paths (`.cache/...`, `data/...`,
 // `out/...`) resolve under the persistent volume.
-function runScript(scriptRel, onChunk) {
+function runScript(scriptRel, onChunk, extraEnv) {
   return new Promise((resolve, reject) => {
     const scriptAbs = path.join(REPO_ROOT, scriptRel);
     const proc = spawn(process.execPath, [scriptAbs], {
       cwd: DATA_DIR,
-      env: process.env,
+      env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let out = '';
@@ -204,9 +225,9 @@ export async function runRefresh({ force = false, triggeredBy = 'manual', onLog 
         continue;
       }
       const t0 = Date.now();
-      collect(`[run]   ${stage.name} → ${stage.script}\n`);
+      collect(`[run]   ${stage.name} → ${stage.script}${stage.env ? ` (env: ${Object.keys(stage.env).join(', ')})` : ''}\n`);
       try {
-        await runScript(stage.script, collect);
+        await runScript(stage.script, collect, stage.env);
         const took = Date.now() - t0;
         collect(`[ok]    ${stage.name} done in ${(took / 1000).toFixed(1)}s\n`);
         stagesRan.push({ name: stage.name, status: 'ran', duration_ms: took });
